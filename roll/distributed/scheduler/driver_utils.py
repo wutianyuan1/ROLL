@@ -75,7 +75,7 @@ def filter_known_msg(msg):
 
 
 def is_ray_cluster_running():
-    ret = subprocess.run("ray status", shell=True, capture_output=True)
+    ret = subprocess.run(f"ray status --address {get_driver_master_addr()}:{get_driver_master_port()}", shell=True, capture_output=True)
     if ret.returncode != 0:
         return False
     return True
