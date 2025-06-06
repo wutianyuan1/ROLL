@@ -1,0 +1,1 @@
+PYTHONPATH=. python examples/start_rlvr_pipeline.py --config_path qwen2.5-7B-rlvr_megatron --config_name new_rlvr_config_2gpu

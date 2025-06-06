@@ -2,6 +2,7 @@ import json
 import os
 import pickle
 
+import time
 import ray
 from ray.runtime_env import RuntimeEnv
 from ray.util.scheduling_strategies import PlacementGroupSchedulingStrategy
@@ -12,7 +13,7 @@ from roll.distributed.scheduler.resource_manager import ResourceManager
 from roll.third_party.vllm import LLM
 
 
-model_path = "Qwen/Qwen2.5-7B-Instruct"
+model_path = "Qwen/Qwen2.5-Coder-7B-Instruct"
 
 prompts = [
     "类型#上衣*材质#牛仔布*颜色#白色*风格#简约*图案#刺绣*衣样式#外套*衣款式#破洞,生成一段文案",
@@ -45,7 +46,7 @@ runtime_env = {
     }
 }
 ray.init(log_to_driver=True, runtime_env=runtime_env)
-resource_manager = ResourceManager()
+resource_manager = ResourceManager(num_gpus_per_node=1, num_nodes=1)
 placement_groups = resource_manager.allocate_placement_group(world_size=1, device_mapping=[0])
 
 
@@ -70,23 +71,41 @@ class TestActor:
         sampling_params = SamplingParams(temperature=0.0, top_p=0.99, top_k=100, max_tokens=512)
         self.model.offload_states()
         import torch
+        import time
 
-        print(f"memory allocated: {torch.cuda.memory_allocated() / 1024 ** 3}")
+        print(f"===before: memory allocated: {torch.cuda.memory_allocated() / 1024 ** 3}")
 
         # use torch.cuda.mem_get_info()[0] in sleep mode: https://github.com/vllm-project/vllm/pull/11743
-        print(f"free: {torch.cuda.mem_get_info()[0] / 1024 ** 3}")
-        import pdb
+        print(f"===before: free: {torch.cuda.mem_get_info()[0] / 1024 ** 3}")
+        # import pdb
 
-        pdb.set_trace()
+        # pdb.set_trace()
 
         self.model.load_states()
+
+        print(f"=== after: memory allocated: {torch.cuda.memory_allocated() / 1024 ** 3}")
+
+        # use torch.cuda.mem_get_info()[0] in sleep mode: https://github.com/vllm-project/vllm/pull/11743
+        print(f"=== after: free: {torch.cuda.mem_get_info()[0] / 1024 ** 3}")
+
+        overheads = []
+        for i in range(10):
+            t1 = time.time()
+            self.model.offload_states()
+            t2 = time.time()
+            print(f"===offload free {i}: {torch.cuda.mem_get_info()[0] / 1024 ** 3}")
+            self.model.load_states()
+            t3 = time.time()
+            print(f"===load free {i}: {torch.cuda.mem_get_info()[0] / 1024 ** 3}")
+            overheads.append([t2 - t1, t3 - t2])
+        print(f"===overheads: {overheads}")
 
         vllm_outputs = self.model.generate(
             sampling_params=sampling_params,
             prompts=chat_prompts,
         )
 
-        print(vllm_outputs)
+        print("Response:!!!", vllm_outputs)
 
 
 env_vars = {
@@ -112,5 +131,5 @@ actor = TestActor.options(
     num_gpus=0.01,
 ).remote(placement_groups=placement_groups)
 ray.get(actor.run.remote())
-
+time.sleep(60)
 ray.shutdown()
