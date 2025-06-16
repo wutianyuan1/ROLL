@@ -152,6 +152,13 @@ class Llm084(LLM):
         for token_ids, request_id in zip(prompt_token_ids, request_ids):
             if request_id is None:
                 request_id = next(self.request_counter)
+            num_running_sys = sum(
+                len(scheduler.running) for scheduler in self.llm_engine.scheduler)
+            num_swapped_sys = sum(
+                len(scheduler.swapped) for scheduler in self.llm_engine.scheduler)
+            num_waiting_sys = sum(
+                len(scheduler.waiting) for scheduler in self.llm_engine.scheduler)
+            print(f"!!!!! Adding request n={sampling_params.n}, req_id={request_id}, unfinished={self.llm_engine.get_num_unfinished_requests()}, max_bsz={self.llm_engine.scheduler_config.max_num_seqs} running/swap/waiting={num_running_sys}/{num_swapped_sys}/{num_waiting_sys}, arrival_time={time.time()}")
             self.llm_engine._add_processed_request(request_id=request_id,
                                                    processed_inputs={"type": "token", "prompt_token_ids": token_ids},
                                                    params=sampling_params,
