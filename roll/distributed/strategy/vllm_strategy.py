@@ -1,6 +1,9 @@
 import copy
 import gc
+import os
 import itertools
+import redis
+import array
 import queue
 from concurrent import futures
 from typing import List, Optional, Union, Dict
@@ -103,6 +106,16 @@ class VllmStrategy(InferenceStrategy):
             master_addr=self.worker.master_addr,
             master_port=self.worker.master_port,
         )
+        try:
+            self.shared_storage = redis.StrictRedis(
+                host=os.environ.get("MASTER_ADDR", "localhost"),
+                port=int(os.environ.get("SCHEDULER_PORT", "9969")),
+                db=0
+            )
+            self.shared_storage.set("test", "1")
+        except:
+            print("*** Scheduler not found, migration is not functional!!!")
+            self.shared_storage = None
 
     def op_compute_log_probs(self, logits: torch.Tensor, input_ids: torch.Tensor, attention_mask: torch.Tensor):
         """
@@ -174,6 +187,23 @@ class VllmStrategy(InferenceStrategy):
                     self.model.add_requests(
                         request_ids=[request_id], prompt_token_ids=prompt_token_ids, sampling_params=sampling_params
                     )
+                elif command == GenerateRequestType.MIGRATE:
+                    # print(f"[Worker {os.getpid()}] Migrate {batch}")
+                    assert self.shared_storage is not None, "Cannot migrate requests due to no redis found."
+                    migrate_pipeline = self.shared_storage.pipeline()
+                    if batch.meta_info["role"] == "src":
+                        desired_req_ids = [str(i) for i in batch.batch['req_ids'].tolist()]
+                        reqs_to_migrate = self.model.fetch_responses_to_migrate(desired_req_ids)
+                        for req_output in reqs_to_migrate:
+                            for resp_id, output_response in enumerate(req_output.outputs):
+                                print(f"=== token_ids_{req_output.request_id}_{resp_id}: prompt_length={len(req_output.prompt_token_ids)} output_length={len(output_response.token_ids)}")
+                                all_token_ids = list(req_output.prompt_token_ids) + list(output_response.token_ids)
+                                serialized_tokens = array.array('I', all_token_ids)
+                                migrate_pipeline.set(f"token_ids_{req_output.request_id}_{resp_id}", serialized_tokens.tobytes())
+                            print(f"*** abort request: {req_output.request_id}")
+                            self.model.abort_request(request_id=req_output.request_id)
+                    migrate_pipeline.execute()
+
                 elif command == GenerateRequestType.ABORT:
                     request_id = batch.meta_info["request_id"]
                     self.model.abort_request(request_id=request_id)

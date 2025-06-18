@@ -476,6 +476,8 @@ class DynamicSamplingScheduler:
         prompt_id_counter = itertools.count()
         self.generation_config = copy.deepcopy(data.meta_info["generation_config"])
         num_return_sequences = self.generation_config["num_return_sequences"]
+        run_start_time = time.time()
+        migrate_done = False
         while True:
             if (
                 sum([len(v) for v in list(self.completed_buffers.values())[:]])
@@ -485,6 +487,31 @@ class DynamicSamplingScheduler:
                 break
             self.check_worker_alive(self.actor_cluster)
             self.check_response_callback()
+
+            ## Madoka WIP: implement migration logic ##
+            # TODO: change migration policy
+            time_elapsed = time.time() - run_start_time
+            if time_elapsed >= 5 and (not migrate_done):
+                print(f"Elapsed time: {time_elapsed}s, trigger migration!")
+                # migrate_done = True
+                migrate_src_dst = {(1, 0): [1, 33],
+                                   (2, 0): [2, 55],
+                                   (3, 0): [3, 77]} # Map(from, to) -> List[Req_id]
+                for (src_worker, dst_worker), req_ids in migrate_src_dst.items():
+                    req_ids_tensor = TensorDict({"req_ids": torch.tensor(req_ids, device='cpu')}, batch_size=len(req_ids))
+                    migrate_request_src = DataProto(batch=req_ids_tensor, non_tensor_batch={}, meta_info={"role": "src"})
+                    ray.get(
+                        self.actor_cluster.workers[src_worker].add_request.remote(
+                            command=GenerateRequestType.MIGRATE, data=migrate_request_src
+                        )
+                    )
+                    migrate_request_dst = DataProto(batch=req_ids_tensor, non_tensor_batch={}, meta_info={"role": "dst"})
+                    ray.get(
+                        self.actor_cluster.workers[dst_worker].add_request.remote(
+                            command=GenerateRequestType.MIGRATE, data=migrate_request_dst
+                        )
+                    )
+
             if not self.check_send_new_request():
                 time.sleep(1)
                 continue

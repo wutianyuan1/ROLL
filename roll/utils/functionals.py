@@ -707,6 +707,7 @@ class GenerateRequestType(enum.Enum):
     ABORT = enum.auto()
     STOP = enum.auto()
     ALIVE_CHECK = enum.auto()
+    MIGRATE = enum.auto()
 
 
 def postprocess_generate(

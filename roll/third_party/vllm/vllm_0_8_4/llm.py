@@ -10,6 +10,7 @@ from vllm import LLM, SamplingParams, EngineArgs, envs
 from vllm.usage.usage_lib import UsageContext
 from vllm.utils import Counter
 from vllm.config import CompilationConfig
+from vllm.sampling_params import RequestOutputKind
 from vllm.engine.arg_utils import (HfOverrides, PoolerConfig, TaskOption)
 
 from roll.third_party.vllm.vllm_0_8_4.llm_engine import LLMEngine084
@@ -143,12 +144,30 @@ class Llm084(LLM):
                 output_list.append(request_output)
         return output_list
 
+    def fetch_responses_to_migrate(self, req_ids: List[str]):
+        output_list = []
+        # simulating non blocking semantic when using v1 engine
+        if envs.VLLM_USE_V1:
+            try:
+                request_outputs = self.llm_engine.step_nowait()
+            except queue.Empty:
+                request_outputs = []
+        else:
+            request_outputs = self.llm_engine.step()
+        print(f"==== return {len(request_outputs)} resps")
+        for request_output in request_outputs:
+            print(f"==== want: {req_ids}, current req_id = {request_output.request_id}")
+            if request_output.request_id in req_ids:
+                output_list.append(request_output)
+        return output_list
+
     def get_num_waiting(self):
         stats = self.llm_engine._get_stats(scheduler_outputs=None)
         return stats.num_waiting_sys
 
     def add_requests(self, prompt_token_ids: List[List[int]], request_ids: List[int] | None, sampling_params: SamplingParams):
         assert len(prompt_token_ids) == len(request_ids)
+        sampling_params.output_kind = RequestOutputKind.CUMULATIVE
         for token_ids, request_id in zip(prompt_token_ids, request_ids):
             if request_id is None:
                 request_id = next(self.request_counter)

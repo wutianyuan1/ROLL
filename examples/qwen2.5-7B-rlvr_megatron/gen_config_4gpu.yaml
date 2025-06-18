@@ -39,11 +39,11 @@ eval_steps: 1
 resume_from_checkpoint: false
 
 
-rollout_batch_size: 64  # prompt
+rollout_batch_size: 4  # prompt
 prompt_length: 2048
-response_length: 256
+response_length: 4096
 
-num_return_sequences_in_group: 8
+num_return_sequences_in_group: 1
 ppo_epochs: 1
 adv_estimator: "reinforce"
 
@@ -136,19 +136,6 @@ actor_infer:
   device_mapping: list(range(0,4))
   infer_batch_size: 1
 
-reference:
-  model_args:
-    flash_attn: fa2
-    disable_gradient_checkpointing: true
-    dtype: bf16
-    model_type: ~
-  data_args:
-    template: qwen2_5
-  strategy_args:
-    strategy_name: hf_infer
-    strategy_config: ~
-  device_mapping: list(range(0,4))
-  infer_batch_size: 8
 
 rewards:
   math_rule:

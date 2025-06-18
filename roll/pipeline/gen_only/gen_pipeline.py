@@ -8,14 +8,10 @@ from typing import Any, Dict, List
 import datasets
 import ray
 import torch
-import time
-import redis
-import random
 from codetiming import Timer
 from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
 from ray.util.timer import _Timer
 
-from roll.multi_tenant.lock_utils import redis_lock
 from roll.datasets.chat_template import get_chat_template
 from roll.datasets.collator import DataCollatorWithPaddingForPaddedKeys
 from roll.distributed.executor.cluster import Cluster
@@ -105,43 +101,11 @@ def query_filter_fn(data_list: List[DataProto], config: RLVRConfig) -> bool:
     return True
 
 
-def gen_random_name(length=10):
-    charset = b"abcdefghijklmnopqrstuvwxyz"
-    name_bytes = bytearray()
-    with open("/dev/urandom", "rb") as f:
-        while len(name_bytes) < length:
-            chunk = f.read(length)
-            for b in chunk:
-                idx = b % 26
-                name_bytes.append(charset[idx])
-                if len(name_bytes) == length:
-                    break
-    return name_bytes.decode("ascii")
-
 class GenOnlyPipeline(BasePipeline):
 
     def __init__(self, pipeline_config: RLVRConfig):
         super().__init__(pipeline_config)
         self.pipeline_config = pipeline_config
-        self.name = gen_random_name()
-        print(f"==== Name: {self.name}")
-        self.master_addr = os.environ.get("MASTER_ADDR", "localhost")
-        self.scheduler_port = int(os.environ.get("SCHEDULER_PORT", 9969))
-        self.report_interval = 0.2
-        self.check_interval = 0.2
-        try:
-            self.shared_storage = redis.StrictRedis(
-                host=self.master_addr,
-                port=self.scheduler_port,
-                db=0,
-                decode_responses=True
-            )
-            self.shared_storage.set("test", "1")
-        except:
-            self.shared_storage = None
-        if self.shared_storage is not None:
-            self.register()
-            self.wait_init()
 
         self.tokenizer = default_tokenizer_provider(model_args=self.pipeline_config.actor_train.model_args)
 
@@ -151,7 +115,6 @@ class GenOnlyPipeline(BasePipeline):
 
         print(f'load_dataset_paths: {chr(10)} {chr(10).join(dataset_paths)}')
         dataset = datasets.load_dataset('json', data_files=dataset_paths)['train']
-        print(f"1111 {dataset}")
 
         # 加上format，然后转ids的func
         template_name = (
@@ -174,7 +137,6 @@ class GenOnlyPipeline(BasePipeline):
             desc="update_dataset_domain",
             load_from_cache_file=False
         )
-        print(f"22222 {dataset}")
 
         self.domain_datasets: Dict[str, datasets.Dataset] = {}
         for domain in self.pipeline_config.actor_train.data_args.domain_interleave_probs.keys():
@@ -254,40 +216,9 @@ class GenOnlyPipeline(BasePipeline):
             refs.extend(cluster.initialize(pipeline_config=self.pipeline_config, blocking=False))
         ray.get(refs)
 
-
         self.running = {}
         for domain in self.rewards.keys():
             self.running[domain] = RunningMoments()
-        if self.shared_storage is not None:
-            print("Find scheduler!")
-            self.shared_storage.set("running_init_job", "empty")
-
-    def register(self):
-        if self.shared_storage is None:
-            return
-        with redis_lock(self.shared_storage, "tenant_list"):
-            self.shared_storage.lpush("tenant_list", self.name)
-
-    def wait_init(self):
-        current_running = self.shared_storage.get("running_init_job")
-        while current_running != self.name:
-            print(f"=== Wait Init: current is {current_running} != {self.name}")
-            time.sleep(self.check_interval)
-            current_running = self.shared_storage.get("running_init_job")
-
-    def wait_gen(self):
-        current_running = self.shared_storage.get("running_gen_job")
-        while current_running != self.name:
-            print(f"### Wait Gen: current is {current_running} != {self.name}")
-            time.sleep(self.check_interval)
-            current_running = self.shared_storage.get("running_gen_job")
-
-    def wait_train(self):
-        current_running = self.shared_storage.get("running_train_job")
-        while current_running != self.name:
-            print(f"@@@ Wait Train: current is {current_running} != {self.name}")
-            time.sleep(self.check_interval)
-            current_running = self.shared_storage.get("running_train_job")
 
     @torch.no_grad()
     def run(self):
@@ -310,10 +241,6 @@ class GenOnlyPipeline(BasePipeline):
             with tps_timer, Timer(name="step_total", logger=None) as step_total_timer:
                 batch: DataProto = DataProto()
                 batch.meta_info = {"global_step": global_step}
-
-                #### Wait for generation
-                if self.shared_storage is not None:
-                    self.wait_gen()
 
                 # 要按domain group by生成对应的batch
                 with actor_infer_timer, actor_infer_response_timer, Timer(
@@ -346,10 +273,6 @@ class GenOnlyPipeline(BasePipeline):
 
                 batch = generate_output
 
-                #### Generation done!!
-                if self.shared_storage is not None:
-                    self.shared_storage.set("running_gen_job", "empty")
-
                 metrics = metrics_mgr.get_metrics()
                 self.state.step = global_step
                 self.state.log_history.append(metrics)
@@ -372,6 +295,8 @@ class GenOnlyPipeline(BasePipeline):
                         generate_output.batch["responses"], skip_special_tokens=True
                     )
                     generate_examples = [{"prompt": p, "response": r} for p, r in zip(prompts, responses)][:10]
+                    output_lens = [len(i) for i in responses]
+                    logger.info(json.dumps(output_lens, ensure_ascii=False))
                     logger.info(json.dumps(generate_examples, ensure_ascii=False))
                     logger.info(json.dumps(metrics, ensure_ascii=False))
 
