@@ -97,7 +97,7 @@ class VllmStrategy(InferenceStrategy):
         )
         logger.info(f"add {special_tokens} to additional_special_tokens: {self.tokenizer.additional_special_tokens}")
 
-        self.worker.rank_info.dp_rank = self.worker.rank
+        self.worker.rank_info.my_rank = self.worker.rank
         self.worker.rank_info.dp_size = self.worker.world_size
         collective.init_collective_group(
             world_size=self.worker.world_size,
@@ -192,6 +192,8 @@ class VllmStrategy(InferenceStrategy):
                     assert self.shared_storage is not None, "Cannot migrate requests due to no redis found."
                     migrate_pipeline = self.shared_storage.pipeline()
                     if batch.meta_info["role"] == "src":
+                        my_rank = batch.meta_info["my_rank"]
+                        dst_rank = batch.meta_info["dst_rank"]
                         desired_req_ids = [str(i) for i in batch.batch['req_ids'].tolist()]
                         reqs_to_migrate = self.model.fetch_responses_to_migrate(desired_req_ids)
                         for req_output in reqs_to_migrate:
@@ -199,10 +201,11 @@ class VllmStrategy(InferenceStrategy):
                                 print(f"=== token_ids_{req_output.request_id}_{resp_id}: prompt_length={len(req_output.prompt_token_ids)} output_length={len(output_response.token_ids)}")
                                 all_token_ids = list(req_output.prompt_token_ids) + list(output_response.token_ids)
                                 serialized_tokens = array.array('I', all_token_ids)
-                                migrate_pipeline.set(f"token_ids_{req_output.request_id}_{resp_id}", serialized_tokens.tobytes())
+                                migrate_pipeline.set(f"token_ids_{my_rank}_{dst_rank}_{req_output.request_id}_{resp_id}", serialized_tokens.tobytes())
                             print(f"*** abort request: {req_output.request_id}")
                             self.model.abort_request(request_id=req_output.request_id)
                     migrate_pipeline.execute()
+                    self.shared_storage.publish("migrate_progress", f"done_{my_rank}_{dst_rank}")
 
                 elif command == GenerateRequestType.ABORT:
                     request_id = batch.meta_info["request_id"]

@@ -4,6 +4,9 @@ import queue
 import random
 import threading
 import time
+import array
+import os
+import redis
 from collections import defaultdict
 from typing import Any, Union, Optional, Dict, List, Set
 
@@ -387,6 +390,16 @@ class DynamicSamplingScheduler:
         self.running_prompts = 0
         self.response_cache: Dict[str, List] = None
         self.prompt_use_count = 0
+        try:
+            self.shared_storage = redis.StrictRedis(
+                host=os.environ.get("MASTER_ADDR", "localhost"),
+                port=int(os.environ.get("SCHEDULER_PORT", "9969")),
+                db=0
+            )
+            self.shared_storage.set("test", "1")
+        except:
+            print("*** Main: redis not found, migration is not functional!!!")
+            self.shared_storage = None
 
     def set_scheduler(
         self,
@@ -478,6 +491,7 @@ class DynamicSamplingScheduler:
         num_return_sequences = self.generation_config["num_return_sequences"]
         run_start_time = time.time()
         migrate_done = False
+        req_id_2_req = {}
         while True:
             if (
                 sum([len(v) for v in list(self.completed_buffers.values())[:]])
@@ -493,25 +507,80 @@ class DynamicSamplingScheduler:
             time_elapsed = time.time() - run_start_time
             if time_elapsed >= 5 and (not migrate_done):
                 print(f"Elapsed time: {time_elapsed}s, trigger migration!")
-                # migrate_done = True
-                migrate_src_dst = {(1, 0): [1, 33],
-                                   (2, 0): [2, 55],
-                                   (3, 0): [3, 77]} # Map(from, to) -> List[Req_id]
+                migrate_done = True
+                migrate_src_dst = {(0, 1): [0, 33],
+                                   (2, 1): [2, 55],
+                                   (3, 1): [3, 77]} # Map(from, to) -> List[Req_id]
+                pubsub_channel = self.shared_storage.pubsub()
+                pubsub_channel.subscribe("migrate_progress")
+                # First, ask the source-side workers to put the current text to shared redis
+                # and abort the running requests.
                 for (src_worker, dst_worker), req_ids in migrate_src_dst.items():
                     req_ids_tensor = TensorDict({"req_ids": torch.tensor(req_ids, device='cpu')}, batch_size=len(req_ids))
-                    migrate_request_src = DataProto(batch=req_ids_tensor, non_tensor_batch={}, meta_info={"role": "src"})
+                    migrate_request_src = DataProto(batch=req_ids_tensor, non_tensor_batch={}, meta_info={"role": "src", "my_rank": src_worker, "dst_rank": dst_worker})
                     ray.get(
                         self.actor_cluster.workers[src_worker].add_request.remote(
                             command=GenerateRequestType.MIGRATE, data=migrate_request_src
                         )
                     )
-                    migrate_request_dst = DataProto(batch=req_ids_tensor, non_tensor_batch={}, meta_info={"role": "dst"})
-                    ray.get(
-                        self.actor_cluster.workers[dst_worker].add_request.remote(
-                            command=GenerateRequestType.MIGRATE, data=migrate_request_dst
+                # Then, 
+                print("++++++++ Then ++++++++")
+                processed_migrations = 0
+                reqs_to_migrate = []
+                for message in pubsub_channel.listen():
+                    print(f"++++++ listen: {message}")
+                    if message['type'] != 'message':
+                        print(f"**** Unexpected type: {message['type']}")
+                        continue
+                    key = message['data'].decode()
+                    if not key.startswith("done_"):
+                        print(f"**** Unexpected key: {key}")
+                        continue
+                    _, src_rank, dst_rank = key.split("_")
+                    src_rank, dst_rank = int(src_rank), int(dst_rank)
+                    expect_num_keys = len(migrate_src_dst[(src_rank, dst_rank)])
+                    keys_scanned = 0
+                    for key in self.shared_storage.scan_iter(match=f'token_ids_{src_rank}_{dst_rank}*'):
+                        key = key.decode()
+                        items = key.split("_")
+                        req_id, resp_id = int(items[4]), int(items[5])
+                        token_ids_bytes = self.shared_storage.get(key)
+                        token_ids_arr = array.array("I")
+                        token_ids_arr.frombytes(token_ids_bytes)
+                        token_ids_list = token_ids_arr.tolist()
+                        token_ids_tensor = torch.tensor([token_ids_list], device='cpu', dtype=torch.int64)
+                        attention_mask = torch.ones_like(token_ids_tensor, device='cpu', dtype=torch.int64)
+                        # Construct a new request from the original one, change data but keep metadata, and add it to the dst worker
+                        new_req: DataProto = req_id_2_req[req_id]
+                        new_req.batch = TensorDict(
+                            {
+                                "attention_mask": attention_mask,
+                                "input_ids": token_ids_tensor,
+                                "position_ids": torch.clip(torch.cumsum(attention_mask, dim=-1) - 1, min=0, max=None),
+                            },
+                            batch_size=1
                         )
-                    )
-
+                        reqs_to_migrate.append((new_req, src_rank, dst_rank))
+                        print(f"Got key: {key}, req_id = {req_id}, resp_id = {resp_id}, new_req = {new_req} tokens: {token_ids_list}")
+                        keys_scanned += 1
+                    keys_scanned == expect_num_keys, f"Keys count not match: expected({expect_num_keys}) != got({keys_scanned})!"
+                    # If all migration requests are processed, break
+                    processed_migrations += 1
+                    if processed_migrations >= len(migrate_src_dst):
+                        break
+                with self.lock:
+                    for req, src_rank, dst_rank in reqs_to_migrate:
+                        print(f"&&&& migrate from {self.request_id_2_dp_rank[req.meta_info['request_id']]} to {dst_rank} (src={src_rank})")
+                        self.request_id_2_dp_rank[req.meta_info["request_id"]] = dst_rank
+                        ray.get(
+                            self.actor_cluster.workers[dst_rank].add_request.remote(
+                                command=GenerateRequestType.ADD, data=req
+                            )
+                        )
+                        req.meta_info.pop("response_callback_fn")
+                        self.load_balance_coordinator[src_rank] -= 1
+                        self.load_balance_coordinator[dst_rank] += 1
+                
             if not self.check_send_new_request():
                 time.sleep(1)
                 continue
@@ -539,6 +608,7 @@ class DynamicSamplingScheduler:
                     self.request_id_2_dp_rank[req.meta_info["request_id"]] = dp_rank
                     self.prompt_id_2_request_ids[prompt_id].add(req.meta_info["request_id"])  # 用于replica情况
                     self.requests_buffers[req.meta_info["request_id"]] = req
+                    req_id_2_req[request_id] = copy.deepcopy(req)
                     ray.get(
                         self.actor_cluster.workers[dp_rank].add_request.remote(
                             command=GenerateRequestType.ADD, data=req
