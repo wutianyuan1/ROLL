@@ -5,6 +5,7 @@ import itertools
 import redis
 import array
 import queue
+import time
 from concurrent import futures
 from typing import List, Optional, Union, Dict
 import asyncio
@@ -226,7 +227,11 @@ class VllmStrategy(InferenceStrategy):
             self.process_vllm_output(vllm_outputs=vllm_outputs, request_complete_callback=request_complete_callback)
 
     def add_request(self, command, data: DataProto):
+        t0 = time.time()
         self.command_queue.put((command, data))
+        t1 = time.time()
+        print(f"Worker: add request, t={t1-t0}")
+
 
     async def async_generate(self, batch: DataProto, generation_config: Dict) -> torch.Tensor:
         # TODO: refactor async_generate interface. not supported now!
