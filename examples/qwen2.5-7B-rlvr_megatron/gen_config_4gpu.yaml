@@ -39,7 +39,7 @@ eval_steps: 1
 resume_from_checkpoint: false
 
 # prompt
-rollout_batch_size: 4
+rollout_batch_size: 128
 prompt_length: 2048
 response_length: 4096
 
