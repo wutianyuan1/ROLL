@@ -32,6 +32,7 @@ from roll.utils.functionals import (
 from roll.utils.logging import get_logger
 from roll.utils.multi_thread_utils import ThreadSafeDict
 from roll.third_party.vllm.vllm_utils import EngineStats
+from roll.distributed.scheduler.migration_scheduler import MigrationSchedulerBase, NaiveMigrationScheduler
 
 logger = get_logger()
 
@@ -399,7 +400,7 @@ class DynamicSamplingScheduler:
             )
             self.shared_storage.set("test", "1")
         except:
-            print("*** Main: redis not found, migration is not functional!!!")
+            print("**** Main: redis not found, migration is not functional!!!")
             self.shared_storage = None
 
     def set_scheduler(
@@ -478,6 +479,13 @@ class DynamicSamplingScheduler:
             mininterval=int(self.batch_size * 0.1) + 1,
         )
 
+    def clear_token_ids_from_shared_storage(self):
+        keys = self.shared_storage.keys("token_ids_*")
+        pipeline = self.shared_storage.pipeline()
+        for key in keys:
+            pipeline.delete(key)
+        pipeline.execute()
+
     def get_batch(self, data: DataProto, batch_size: int) -> DataProto:
         """
         从dataset里，按给定策略sample batch
@@ -490,9 +498,9 @@ class DynamicSamplingScheduler:
         prompt_id_counter = itertools.count()
         self.generation_config = copy.deepcopy(data.meta_info["generation_config"])
         num_return_sequences = self.generation_config["num_return_sequences"]
-        run_start_time = time.time()
-        migrate_done = False
         req_id_2_req = {}
+        migration_scheduler: MigrationSchedulerBase = NaiveMigrationScheduler()
+        get_worker_stat_fns = [self.actor_cluster.workers[i].get_stats for i in range(len(self.actor_cluster.workers))]
         while True:
             if (
                 sum([len(v) for v in list(self.completed_buffers.values())[:]])
@@ -503,33 +511,35 @@ class DynamicSamplingScheduler:
             self.check_worker_alive(self.actor_cluster)
             self.check_response_callback()
 
-            ## Madoka WIP: implement migration logic ##
-            # TODO: change migration policy
-            time_elapsed = time.time() - run_start_time
-            if time_elapsed >= 5 and (not migrate_done):
-                print(f"Elapsed time: {time_elapsed}s, trigger migration!")
-                migrate_done = True
-                migrate_src_dst = {(0, 1): [0],
-                                   (2, 1): [2],
-                                   (3, 1): [3]} # Map(from, to) -> List[Req_id]
+            # Madoka: the request migration logic based on re-calculation
+            # `migrate_src_dst`: Dict[(from, to) -> List[req_id]], note that vLLM uses strings as req_ids.
+            migrate_src_dst = migration_scheduler.migrate(get_worker_stat_fns, self.request_id_2_dp_rank)
+            if len(migrate_src_dst) != 0:
+                mig_start_t = time.time()
+                # Before migration, first clean all old keys.
+                self.clear_token_ids_from_shared_storage()
                 pubsub_channel = self.shared_storage.pubsub()
                 pubsub_channel.subscribe("migrate_progress")
                 # First, ask the source-side workers to put the current text to shared redis
                 # and abort the running requests.
                 for (src_worker, dst_worker), req_ids in migrate_src_dst.items():
-                    req_ids_tensor = TensorDict({"req_ids": torch.tensor(req_ids, device='cpu')}, batch_size=len(req_ids))
-                    migrate_request_src = DataProto(batch=req_ids_tensor, non_tensor_batch={}, meta_info={"role": "src", "my_rank": src_worker, "dst_rank": dst_worker})
+                    migrate_request_src = DataProto()
+                    migrate_request_src.meta_info={
+                        "req_ids": req_ids,
+                        "role": "src",
+                        "my_rank": src_worker,
+                        "dst_rank": dst_worker
+                    }
                     ray.get(
                         self.actor_cluster.workers[src_worker].add_request.remote(
                             command=GenerateRequestType.MIGRATE, data=migrate_request_src
                         )
                     )
                 # Then, get the response tokens from the redis, and re-send them as new requests to the dst_rank worker.
-                print("++++++++ Then ++++++++")
                 processed_migrations = 0
                 reqs_to_migrate = []
                 for message in pubsub_channel.listen():
-                    print(f"++++++ listen: {message}")
+                    print(f"==== listen: {message}")
                     if message['type'] != 'message':
                         print(f"**** Unexpected type: {message['type']}")
                         continue
@@ -565,7 +575,7 @@ class DynamicSamplingScheduler:
                         )
                         new_req.meta_info['resp_start_idx'] = resp_start_idx
                         reqs_to_migrate.append((new_req, src_rank, dst_rank))
-                        print(f"Got key: {key}, req_id = {req_id}, resp_id = {resp_id}, new_req = {new_req} tokens: {token_ids_list}")
+                        print(f"==== Got key={key}, req_id={req_id}, resp_id={resp_id}, num_tokens={len(token_ids_list) - 1}")
                         keys_scanned += 1
                     src_worker_stats: EngineStats = ray.get(self.actor_cluster.workers[src_rank].get_stats.remote())
                     unfinished_count = src_worker_stats.num_running_reqs + src_worker_stats.num_swapped_reqs + src_worker_stats.num_waiting_reqs
@@ -579,7 +589,9 @@ class DynamicSamplingScheduler:
                         break
                 with self.lock:
                     for req, src_rank, dst_rank in reqs_to_migrate:
-                        print(f"&&&& migrate from {self.request_id_2_dp_rank[req.meta_info['request_id']]} to {dst_rank} (src={src_rank})")
+                        assert self.request_id_2_dp_rank[req.meta_info['request_id']] == src_rank,\
+                            f"Rank not equal, got {self.request_id_2_dp_rank[req.meta_info['request_id']]} (should be {src_rank})"
+                        print(f"==== migrate from {src_rank} to {dst_rank}")
                         self.request_id_2_dp_rank[req.meta_info["request_id"]] = dst_rank
                         ray.get(
                             self.actor_cluster.workers[dst_rank].add_request.remote(
@@ -589,7 +601,9 @@ class DynamicSamplingScheduler:
                         req.meta_info.pop("response_callback_fn")
                         self.load_balance_coordinator[src_rank] -= 1
                         self.load_balance_coordinator[dst_rank] += 1
-                
+                mig_end_t = time.time()
+                print(f"==== migrate {sum([len(i) for i in migrate_src_dst.values()])} requests, costs {mig_end_t - mig_start_t}s.")
+
             if not self.check_send_new_request():
                 time.sleep(1)
                 continue
@@ -672,6 +686,8 @@ class DynamicSamplingScheduler:
             output_count = batch.batch.batch_size[0]
             with self.lock:
                 self.load_balance_coordinator[self.request_id_2_dp_rank[request_id]] -= 1
+                # Madoka: once a request finished, remove it from `request_id_2_dp_rank`
+                self.request_id_2_dp_rank.pop(request_id)
                 self.prompt_id_2_request_ids[prompt_id].remove(request_id)
                 domain = "default"
                 if "domain" in batch.non_tensor_batch.keys():
@@ -759,6 +775,8 @@ class DynamicSamplingScheduler:
         self.running_prompts -= 1
         for request_id in request_ids:
             dp_rank = self.request_id_2_dp_rank[request_id]
+            # Madoka: once a request is aborted, remove it from `request_id_2_dp_rank`
+            self.request_id_2_dp_rank.pop(request_id)
             self.load_balance_coordinator[dp_rank] -= 1
             abort_refs.append(
                 self.actor_cluster.workers[dp_rank].add_request.remote(

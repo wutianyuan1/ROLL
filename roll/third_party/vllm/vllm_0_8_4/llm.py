@@ -156,8 +156,10 @@ class Llm084(LLM):
         else:
             request_outputs = self.llm_engine.step()
         print(f"==== return {len(request_outputs)} resps")
+        # TODO: Madoka: If the request accidently finished at here, we need to add a normal callback
+        # and should not trigger migration. I am not sure if migrating a finished request is correct.
         for request_output in request_outputs:
-            print(f"==== want: {req_ids}, current req_id = {request_output.request_id}")
+            print(f"==== want: {req_ids}, current req_id = {request_output.request_id}, finished: {request_output.finished}")
             if request_output.request_id in req_ids:
                 output_list.append(request_output)
         return output_list
@@ -183,7 +185,7 @@ class Llm084(LLM):
         for token_ids, request_id in zip(prompt_token_ids, request_ids):
             if request_id is None:
                 request_id = next(self.request_counter)
-            print(f"!!!!! Adding request n={sampling_params.n}, req_id={request_id}, current_stats={self.get_stats()} arrival_time={time.time()}")
+            print(f"==== LLM Engine add request n={sampling_params.n}, req_id={request_id}, current_stats={self.get_stats()} arrival_time={time.time()}")
             self.llm_engine._add_processed_request(request_id=request_id,
                                                    processed_inputs={"type": "token", "prompt_token_ids": token_ids},
                                                    params=sampling_params,

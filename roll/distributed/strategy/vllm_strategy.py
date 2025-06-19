@@ -203,7 +203,7 @@ class VllmStrategy(InferenceStrategy):
                     if batch.meta_info["role"] == "src":
                         my_rank = batch.meta_info["my_rank"]
                         dst_rank = batch.meta_info["dst_rank"]
-                        desired_req_ids = [str(i) for i in batch.batch['req_ids'].tolist()]
+                        desired_req_ids = batch.meta_info['req_ids']
                         reqs_to_migrate = self.model.fetch_responses_to_migrate(desired_req_ids)
                         for req_output in reqs_to_migrate:
                             for resp_id, output_response in enumerate(req_output.outputs):
