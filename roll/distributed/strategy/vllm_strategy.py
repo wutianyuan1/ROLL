@@ -23,6 +23,7 @@ from roll.distributed.scheduler.protocol import DataProto
 from roll.distributed.strategy.strategy import InferenceStrategy
 from roll.third_party.vllm import LLM
 from roll.third_party.vllm import AsyncLLM
+from roll.third_party.vllm.vllm_utils import EngineStats
 from roll.utils.collective import collective
 from roll.utils.functionals import concatenate_input_and_output, GenerateRequestType
 from roll.utils.logging import get_logger
@@ -43,6 +44,7 @@ class VllmStrategy(InferenceStrategy):
         self.command_queue: Optional[queue.Queue] = None
 
         self.request_metas = {}
+        self.req_id_2_resp_start_idx = {}
         self.group_name = "vllm_worker_default"
         self.running = False
 
@@ -160,8 +162,13 @@ class VllmStrategy(InferenceStrategy):
             request_id = request_output.request_id
             if request_id not in self.request_metas:
                 continue
+            previous_output_token_ids = []
+            if request_id in self.req_id_2_resp_start_idx:
+                resp_start_idx = self.req_id_2_resp_start_idx[request_id]
+                print(f"==== find start idx={resp_start_idx}")
+                previous_output_token_ids += list(request_output.prompt_token_ids[resp_start_idx:])
             for completion_output in request_output.outputs:
-                output_token_ids.append(completion_output.token_ids)
+                output_token_ids.append(tuple(previous_output_token_ids + list(completion_output.token_ids)))
             output_data = DataProto(meta_info=self.request_metas[request_id])
             output_data.meta_info["output_token_ids"] = output_token_ids
             request_complete_callback(data=output_data)
@@ -187,6 +194,8 @@ class VllmStrategy(InferenceStrategy):
                     self.model.add_requests(
                         request_ids=[request_id], prompt_token_ids=prompt_token_ids, sampling_params=sampling_params
                     )
+                    if 'resp_start_idx' in batch.meta_info:
+                        self.req_id_2_resp_start_idx[request_id] = batch.meta_info['resp_start_idx']
                 elif command == GenerateRequestType.MIGRATE:
                     # print(f"[Worker {os.getpid()}] Migrate {batch}")
                     assert self.shared_storage is not None, "Cannot migrate requests due to no redis found."
@@ -199,7 +208,8 @@ class VllmStrategy(InferenceStrategy):
                         for req_output in reqs_to_migrate:
                             for resp_id, output_response in enumerate(req_output.outputs):
                                 print(f"=== token_ids_{req_output.request_id}_{resp_id}: prompt_length={len(req_output.prompt_token_ids)} output_length={len(output_response.token_ids)}")
-                                all_token_ids = list(req_output.prompt_token_ids) + list(output_response.token_ids)
+                                # all_token_ids: [0] is the seperation index of prompt and response, [1:sep_idx+1] are prompt tokens, [sep_idx+1:] are response tokens
+                                all_token_ids = [len(req_output.prompt_token_ids)] + list(req_output.prompt_token_ids) + list(output_response.token_ids)
                                 serialized_tokens = array.array('I', all_token_ids)
                                 migrate_pipeline.set(f"token_ids_{my_rank}_{dst_rank}_{req_output.request_id}_{resp_id}", serialized_tokens.tobytes())
                             print(f"*** abort request: {req_output.request_id}")
@@ -213,6 +223,7 @@ class VllmStrategy(InferenceStrategy):
                 elif command == GenerateRequestType.STOP:
                     self.model.abort_request(request_id=list(self.request_metas.keys()))
                     self.request_metas.clear()
+                    self.req_id_2_resp_start_idx.clear()
                     while not self.command_queue.empty():
                         self.command_queue.get_nowait()
                     # Run llm_engine again to consume all out standing requests and
@@ -227,6 +238,9 @@ class VllmStrategy(InferenceStrategy):
 
     def add_request(self, command, data: DataProto):
         self.command_queue.put((command, data))
+
+    def get_stats(self) -> EngineStats:
+        return self.model.get_stats()
 
     async def async_generate(self, batch: DataProto, generation_config: Dict) -> torch.Tensor:
         # TODO: refactor async_generate interface. not supported now!

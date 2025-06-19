@@ -31,6 +31,7 @@ from roll.utils.functionals import (
 )
 from roll.utils.logging import get_logger
 from roll.utils.multi_thread_utils import ThreadSafeDict
+from roll.third_party.vllm.vllm_utils import EngineStats
 
 logger = get_logger()
 
@@ -508,9 +509,9 @@ class DynamicSamplingScheduler:
             if time_elapsed >= 5 and (not migrate_done):
                 print(f"Elapsed time: {time_elapsed}s, trigger migration!")
                 migrate_done = True
-                migrate_src_dst = {(0, 1): [0, 33],
-                                   (2, 1): [2, 55],
-                                   (3, 1): [3, 77]} # Map(from, to) -> List[Req_id]
+                migrate_src_dst = {(0, 1): [0],
+                                   (2, 1): [2],
+                                   (3, 1): [3]} # Map(from, to) -> List[Req_id]
                 pubsub_channel = self.shared_storage.pubsub()
                 pubsub_channel.subscribe("migrate_progress")
                 # First, ask the source-side workers to put the current text to shared redis
@@ -523,7 +524,7 @@ class DynamicSamplingScheduler:
                             command=GenerateRequestType.MIGRATE, data=migrate_request_src
                         )
                     )
-                # Then, 
+                # Then, get the response tokens from the redis, and re-send them as new requests to the dst_rank worker.
                 print("++++++++ Then ++++++++")
                 processed_migrations = 0
                 reqs_to_migrate = []
@@ -548,7 +549,9 @@ class DynamicSamplingScheduler:
                         token_ids_arr = array.array("I")
                         token_ids_arr.frombytes(token_ids_bytes)
                         token_ids_list = token_ids_arr.tolist()
-                        token_ids_tensor = torch.tensor([token_ids_list], device='cpu', dtype=torch.int64)
+                        # token_ids_list: [0] is the seperation index of prompt and response, [1:sep_idx+1] are prompt tokens, [sep_idx+1:] are response tokens
+                        resp_start_idx = token_ids_list[0]
+                        token_ids_tensor = torch.tensor([token_ids_list[1:]], device='cpu', dtype=torch.int64)
                         attention_mask = torch.ones_like(token_ids_tensor, device='cpu', dtype=torch.int64)
                         # Construct a new request from the original one, change data but keep metadata, and add it to the dst worker
                         new_req: DataProto = req_id_2_req[req_id]
@@ -560,11 +563,15 @@ class DynamicSamplingScheduler:
                             },
                             batch_size=1
                         )
+                        new_req.meta_info['resp_start_idx'] = resp_start_idx
                         reqs_to_migrate.append((new_req, src_rank, dst_rank))
                         print(f"Got key: {key}, req_id = {req_id}, resp_id = {resp_id}, new_req = {new_req} tokens: {token_ids_list}")
                         keys_scanned += 1
-                    print(f"==== Call stopserver to worker {src_rank}")
-                    self.actor_cluster.workers[src_rank].stop_server.remote()
+                    src_worker_stats: EngineStats = ray.get(self.actor_cluster.workers[src_rank].get_stats.remote())
+                    unfinished_count = src_worker_stats.num_running_reqs + src_worker_stats.num_swapped_reqs + src_worker_stats.num_waiting_reqs
+                    if unfinished_count == 0:
+                        print(f"==== Call stopserver to worker {src_rank} due to no active requests on it, current engine stats: {src_worker_stats}")
+                        self.actor_cluster.workers[src_rank].stop_server.remote()
                     keys_scanned == expect_num_keys, f"Keys count not match: expected({expect_num_keys}) != got({keys_scanned})!"
                     # If all migration requests are processed, break
                     processed_migrations += 1

@@ -15,6 +15,7 @@ from vllm.engine.arg_utils import (HfOverrides, PoolerConfig, TaskOption)
 
 from roll.third_party.vllm.vllm_0_8_4.llm_engine import LLMEngine084
 from roll.utils.send_recv_utils import SendBucketManager
+from roll.third_party.vllm.vllm_utils import EngineStats
 
 
 class Llm084(LLM):
@@ -165,19 +166,24 @@ class Llm084(LLM):
         stats = self.llm_engine._get_stats(scheduler_outputs=None)
         return stats.num_waiting_sys
 
+    def get_stats(self) -> EngineStats:
+        num_running_reqs = sum(
+            len(scheduler.running) for scheduler in self.llm_engine.scheduler)
+        num_swapped_reqs = sum(
+            len(scheduler.swapped) for scheduler in self.llm_engine.scheduler)
+        num_waiting_reqs = sum(
+            len(scheduler.waiting) for scheduler in self.llm_engine.scheduler)
+        num_unfinished_reqs = self.llm_engine.get_num_unfinished_requests()
+        max_batch_size = self.llm_engine.scheduler_config.max_num_seqs
+        return EngineStats(num_running_reqs, num_swapped_reqs, num_waiting_reqs, num_unfinished_reqs, max_batch_size)
+
     def add_requests(self, prompt_token_ids: List[List[int]], request_ids: List[int] | None, sampling_params: SamplingParams):
         assert len(prompt_token_ids) == len(request_ids)
         sampling_params.output_kind = RequestOutputKind.CUMULATIVE
         for token_ids, request_id in zip(prompt_token_ids, request_ids):
             if request_id is None:
                 request_id = next(self.request_counter)
-            num_running_sys = sum(
-                len(scheduler.running) for scheduler in self.llm_engine.scheduler)
-            num_swapped_sys = sum(
-                len(scheduler.swapped) for scheduler in self.llm_engine.scheduler)
-            num_waiting_sys = sum(
-                len(scheduler.waiting) for scheduler in self.llm_engine.scheduler)
-            print(f"!!!!! Adding request n={sampling_params.n}, req_id={request_id}, unfinished={self.llm_engine.get_num_unfinished_requests()}, max_bsz={self.llm_engine.scheduler_config.max_num_seqs} running/swap/waiting={num_running_sys}/{num_swapped_sys}/{num_waiting_sys}, arrival_time={time.time()}")
+            print(f"!!!!! Adding request n={sampling_params.n}, req_id={request_id}, current_stats={self.get_stats()} arrival_time={time.time()}")
             self.llm_engine._add_processed_request(request_id=request_id,
                                                    processed_inputs={"type": "token", "prompt_token_ids": token_ids},
                                                    params=sampling_params,
