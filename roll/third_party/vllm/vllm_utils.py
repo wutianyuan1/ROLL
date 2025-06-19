@@ -1,4 +1,5 @@
 # borrow from https://github.com/volcengine/verl/blob/main/verl/utils/vllm_utils.py
+from dataclasses import dataclass
 
 SUPPORTED_MOE_MODELS = []
 
@@ -20,6 +21,20 @@ try:
     SUPPORTED_MOE_MODELS.append(Qwen3MoeForCausalLM)
 except ImportError:
     pass
+
+@dataclass
+class EngineStats:
+    num_running_reqs: int
+    num_swapped_reqs: int
+    num_waiting_reqs: int
+    num_unfinished_reqs: int
+    max_batch_size: int
+
+    def __repr__(self) -> str:
+        return f"EngineStats<unfinished={self.num_unfinished_reqs}, max_bsz={self.max_batch_size} running/swap/waiting={self.num_running_reqs}/{self.num_swapped_reqs}/{self.num_waiting_reqs}>"
+
+    def __str__(self) -> str:
+        return repr(self)
 
 
 def patch_vllm_moe_model_weight_loader(model):

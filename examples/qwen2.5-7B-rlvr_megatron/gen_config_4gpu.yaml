@@ -38,8 +38,8 @@ logging_steps: 1
 eval_steps: 1
 resume_from_checkpoint: false
 
-
-rollout_batch_size: 4  # prompt
+# prompt
+rollout_batch_size: 4
 prompt_length: 2048
 response_length: 4096
 
@@ -80,8 +80,8 @@ whiten_advantages: true
 # max_running_requests: 256
 # is_num_return_sequences_expand: false
 
-pretrain: deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
-reward_pretrain: deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+pretrain: Qwen/Qwen2.5-Math-7B-Instruct
+reward_pretrain: Qwen/Qwen2.5-Math-7B-Instruct
 
 actor_train:
   model_args:
@@ -99,7 +99,7 @@ actor_train:
   data_args:
     template: qwen2_5
     file_name:
-      - data/math_deepmath_deal.jsonl
+      - data/math_deepmath_deal_512.jsonl
     domain_interleave_probs:
       math_rule: 1.0
     dataset_dir: data
@@ -131,7 +131,7 @@ actor_infer:
     strategy_config:
       gpu_memory_utilization: 0.7
       block_size: 16
-      max_model_len: 131072
+      max_model_len: 4096
       load_format: auto
   device_mapping: list(range(0,4))
   infer_batch_size: 1

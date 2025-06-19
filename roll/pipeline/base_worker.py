@@ -26,6 +26,7 @@ from roll.utils.functionals import (
     agg_loss,
 )
 from roll.utils.offload_states import OffloadStateType
+from roll.third_party.vllm.vllm_utils import EngineStats
 
 
 class ActorWorker(Worker):
@@ -38,6 +39,7 @@ class ActorWorker(Worker):
         self.server_metrics = {}
         self.thread_server = None
         self.offload_manager = None
+        self.stop_server_metrics = None
 
     @register(dispatch_mode=Dispatch.ONE_TO_ALL)
     def initialize(self, pipeline_config):
@@ -170,6 +172,7 @@ class ActorWorker(Worker):
 
         self.logger.info(f"{self.worker_name} generate server global step {global_step}")
         self.response_call_back_fns = {}
+        self.stop_server_metrics = None
 
         self.response_callback_refs = []
         self.server_metrics = {}
@@ -192,6 +195,11 @@ class ActorWorker(Worker):
     def stop_server(self, data: DataProto = None):
         if not hasattr(self, "thread_server"):
             raise ValueError("server is not initialized")
+        if self.thread_server is None:
+            assert self.stop_server_metrics is not None
+            print("=== stop server: already stopped!")
+            return self.stop_server_metrics
+        print(f"==== stop server: thread_server={self.thread_server}")
 
         self.strategy.add_request(command=GenerateRequestType.STOP, data=data)
         self.thread_server.join()
@@ -200,8 +208,12 @@ class ActorWorker(Worker):
         self.offload_manager.__exit__(None, None, None)
         ray.get(self.response_callback_refs)
         self.response_callback_refs.clear()
+        self.stop_server_metrics = DataProto(meta_info={"metrics": self.server_metrics})
+        return self.stop_server_metrics
 
-        return DataProto(meta_info={"metrics": self.server_metrics})
+    def get_stats(self) -> EngineStats:
+        assert isinstance(self.strategy, InferenceStrategy), "get_stats() currently only supports vllm inference strategy"
+        return self.strategy.get_stats()
 
     @register(dispatch_mode=Dispatch.DP_MP_DISPATCH_FIRST)
     def compute_log_probs(self, data: DataProto):
@@ -338,7 +350,7 @@ class ActorWorker(Worker):
         output = DataProto(meta_info={"metrics": metrics})
         return output
 
-    @register(dispatch_mode=Dispatch.ONE_TO_ALL)
+    @register(dispatch_mode=Dispatch.ONE_TO_ALL, clear_cache=False)
     def add_request(self, command, data: DataProto):
         """
         data req meta_info里需要包含:
