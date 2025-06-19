@@ -338,7 +338,7 @@ class ActorWorker(Worker):
         output = DataProto(meta_info={"metrics": metrics})
         return output
 
-    @register(dispatch_mode=Dispatch.ONE_TO_ALL)
+    @register(dispatch_mode=Dispatch.ONE_TO_ALL, clear_cache=False)
     def add_request(self, command, data: DataProto):
         """
         data req meta_info里需要包含:

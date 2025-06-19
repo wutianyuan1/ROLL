@@ -254,7 +254,7 @@ def _check_execute_mode(execute_mode):
     assert isinstance(execute_mode, Execute), f"execute_mode must be a Execute. Got {execute_mode}"
 
 
-def register(dispatch_mode=Dispatch.ALL_TO_ALL, execute_mode=Execute.ALL):
+def register(dispatch_mode=Dispatch.ALL_TO_ALL, execute_mode=Execute.ALL, clear_cache=True):
     _check_dispatch_mode(dispatch_mode)
     _check_execute_mode(execute_mode)
 
@@ -263,12 +263,13 @@ def register(dispatch_mode=Dispatch.ALL_TO_ALL, execute_mode=Execute.ALL):
         def inner(*args, **kwargs):
             try:
                 result = func(*args, **kwargs)
-                try:
-                    torch._C._cuda_clearCublasWorkspaces()
-                    gc.collect()
-                    torch.cuda.empty_cache()
-                except Exception as oe:
-                    pass
+                if clear_cache:
+                    try:
+                        torch._C._cuda_clearCublasWorkspaces()
+                        gc.collect()
+                        torch.cuda.empty_cache()
+                    except Exception as oe:
+                        pass
 
             except Exception as e:
                 logger.error(str(e))
