@@ -192,6 +192,7 @@ class ActorWorker(Worker):
     def stop_server(self, data: DataProto = None):
         if not hasattr(self, "thread_server"):
             raise ValueError("server is not initialized")
+        print(f"==== stop server: thread_server={self.thread_server}")
 
         self.strategy.add_request(command=GenerateRequestType.STOP, data=data)
         self.thread_server.join()

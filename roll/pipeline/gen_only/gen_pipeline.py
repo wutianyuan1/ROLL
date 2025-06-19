@@ -294,10 +294,10 @@ class GenOnlyPipeline(BasePipeline):
                     responses = self.tokenizer.batch_decode(
                         generate_output.batch["responses"], skip_special_tokens=True
                     )
-                    generate_examples = [{"prompt": p, "response": r} for p, r in zip(prompts, responses)][:10]
-                    output_lens = [len(i) for i in responses]
-                    logger.info(json.dumps(output_lens, ensure_ascii=False))
-                    logger.info(json.dumps(generate_examples, ensure_ascii=False))
+                    # generate_examples = [{"prompt": p, "response": r} for p, r in zip(prompts, responses)][:10]
+                    output_lens = [len(self.tokenizer(i)['input_ids']) for i in responses]
+                    logger.info("Output_lens: " + json.dumps(output_lens, ensure_ascii=False))
+                    # logger.info(json.dumps(generate_examples, ensure_ascii=False))
                     logger.info(json.dumps(metrics, ensure_ascii=False))
 
                 logger.info(f"pipeline step {global_step} finished")

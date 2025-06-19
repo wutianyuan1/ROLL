@@ -505,7 +505,7 @@ class DynamicSamplingScheduler:
             ## Madoka WIP: implement migration logic ##
             # TODO: change migration policy
             time_elapsed = time.time() - run_start_time
-            if False: #time_elapsed >= 5 and (not migrate_done):
+            if time_elapsed >= 5 and (not migrate_done):
                 print(f"Elapsed time: {time_elapsed}s, trigger migration!")
                 migrate_done = True
                 migrate_src_dst = {(0, 1): [0, 33],
@@ -563,6 +563,8 @@ class DynamicSamplingScheduler:
                         reqs_to_migrate.append((new_req, src_rank, dst_rank))
                         print(f"Got key: {key}, req_id = {req_id}, resp_id = {resp_id}, new_req = {new_req} tokens: {token_ids_list}")
                         keys_scanned += 1
+                    print(f"==== Call stopserver to worker {src_rank}")
+                    self.actor_cluster.workers[src_rank].stop_server.remote()
                     keys_scanned == expect_num_keys, f"Keys count not match: expected({expect_num_keys}) != got({keys_scanned})!"
                     # If all migration requests are processed, break
                     processed_migrations += 1
@@ -591,7 +593,6 @@ class DynamicSamplingScheduler:
             domain = dataset_item.get("domain", "default")
             collect_data = self.collect_fn([dataset_item])
             request_data: DataProto = DataProto.from_single_dict(collect_data, meta_info=data.meta_info)
-            t0 = time.time()
             # replica, redundancy
             request_data_list = self.expand_requests(request_data)
 
@@ -599,35 +600,24 @@ class DynamicSamplingScheduler:
             with self.lock:
                 self.prompt_use_count += 1
                 self.running_prompts += 1
-                tb_for = time.time()
                 for req in request_data_list:
                     # get a available worker, 需要控制max_running_request, 当前策略会始终保持worker的满载
-                    t2 = time.time()
                     request_id = ray.get(self.request_counter.get_value.remote())
-                    t3 = time.time()
                     req.meta_info["request_id"] = f"{request_id}"
                     req.meta_info["response_callback_fn"] = self.response_callback_fn
                     self.request_id_2_prompt_id[req.meta_info["request_id"]] = prompt_id
                     self.request_id_2_dp_rank[req.meta_info["request_id"]] = dp_rank
                     self.prompt_id_2_request_ids[prompt_id].add(req.meta_info["request_id"])  # 用于replica情况
                     self.requests_buffers[req.meta_info["request_id"]] = req
-                    t4 = time.time()
                     req_id_2_req[request_id] = copy.deepcopy(req)
-                    print(f"---- Scheduler: add request req_id={request_id}, send_time={time.time()}")
-                    t5 = time.time()
                     ray.get(
                         self.actor_cluster.workers[dp_rank].add_request.remote(
                             command=GenerateRequestType.ADD, data=req
                         )
                     )
-                    t6 = time.time()
                     req.meta_info.pop("response_callback_fn")
                     self.load_balance_coordinator[dp_rank] += 1
                     self.dp_fetch_count[dp_rank] += 1
-                    t7 = time.time()
-                te_for = time.time()
-            t1 = time.time()
-            print(f"send_req_total={t1-t0}, for_loop={te_for-tb_for}, get_id={t3-t2}, prepare={t4-t3}, copy={t5-t4}, add={t6-t5}, final={t7-t6}")
 
         completed_buffers = {k: v for k, v in self.completed_buffers.items() if len(v) > 0}
         collect_data = [item for sublist in list(completed_buffers.values())[:] for item in sublist]
