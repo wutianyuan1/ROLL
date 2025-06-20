@@ -498,7 +498,7 @@ class DynamicSamplingScheduler:
         prompt_id_counter = itertools.count()
         self.generation_config = copy.deepcopy(data.meta_info["generation_config"])
         num_return_sequences = self.generation_config["num_return_sequences"]
-        req_id_2_req = {}
+        request_id_2_request = {}
         migration_scheduler: MigrationSchedulerBase = NaiveMigrationScheduler()
         get_worker_stat_fns = [self.actor_cluster.workers[i].get_stats for i in range(len(self.actor_cluster.workers))]
         while True:
@@ -564,7 +564,7 @@ class DynamicSamplingScheduler:
                         token_ids_tensor = torch.tensor([token_ids_list[1:]], device='cpu', dtype=torch.int64)
                         attention_mask = torch.ones_like(token_ids_tensor, device='cpu', dtype=torch.int64)
                         # Construct a new request from the original one, change data but keep metadata, and add it to the dst worker
-                        new_req: DataProto = req_id_2_req[req_id]
+                        new_req: DataProto = request_id_2_request[req_id]
                         new_req.batch = TensorDict(
                             {
                                 "attention_mask": attention_mask,
@@ -630,7 +630,7 @@ class DynamicSamplingScheduler:
                     self.request_id_2_dp_rank[req.meta_info["request_id"]] = dp_rank
                     self.prompt_id_2_request_ids[prompt_id].add(req.meta_info["request_id"])  # 用于replica情况
                     self.requests_buffers[req.meta_info["request_id"]] = req
-                    req_id_2_req[request_id] = copy.deepcopy(req)
+                    request_id_2_request[request_id] = copy.deepcopy(req)
                     ray.get(
                         self.actor_cluster.workers[dp_rank].add_request.remote(
                             command=GenerateRequestType.ADD, data=req
