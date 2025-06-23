@@ -156,22 +156,99 @@ class VllmStrategy(InferenceStrategy):
         return output
 
     def process_vllm_output(self, vllm_outputs: List[RequestOutput], request_complete_callback):
+        # TODO: Lunxi: Assume num_return_sequences > 1.
+        shard_storage_pipeline = self.shared_storage.pipeline()
+        migrated_resps: List[RequestOutput] = []
+        normal_reqs: List[RequestOutput] = []
+        for output_request in vllm_outputs:
+            if len(output_request.outputs) == 1:
+                migrated_resps.append(output_request)
+            else:
+                normal_reqs.append(output_request)
+        # print(f"=== normal reqs: {[req.request_id for req in normal_reqs]} migrated resps: {[resp.request_id for resp in migrated_resps]}")
+
+        # Deal with migrated responses.
+        # For a request that have only one response, which means it's a migrated response of its original request,
+        # do not process it, check if its original request has been finished instead.
+        # If so, collect responses and then process the original request, else cache it in shared storage.
+        origin_req_id_2_num_seqs = {}
+        origin_req_id_2_resps = {}
+        for migrated_resp in migrated_resps:
+            # migrated_request id is like f"{req_id}_{resp_id}_{num_seqs}"
+            origin_req_id, resp_id, num_seqs, = migrated_resp.request_id.split("_")
+
+            if origin_req_id not in origin_req_id_2_num_seqs:
+                origin_req_id_2_num_seqs[origin_req_id] = int(num_seqs)
+            else:
+                assert origin_req_id_2_num_seqs[origin_req_id] == int(num_seqs)
+
+            if origin_req_id not in origin_req_id_2_resps:
+                origin_req_id_2_resps[origin_req_id] = []
+            origin_req_id_2_resps[origin_req_id].append((resp_id, migrated_resp))
+
+        for origin_req_id, resps in origin_req_id_2_resps.items():
+            assert origin_req_id in self.req_id_2_resp_start_idx
+            resp_start_idx = self.req_id_2_resp_start_idx[origin_req_id]
+            keys = [key.decode() for key in self.shared_storage.scan_iter(match=f"finished_token_ids_{origin_req_id}_*")]
+            # print(f"=== origin_req_id={origin_req_id}, cached responses: {len(keys)}, finished responses at this step: {len(resps)}, num_seqs: {origin_req_id_2_num_seqs[origin_req_id]}")
+            assert len(keys) + len(resps) <= origin_req_id_2_num_seqs[origin_req_id], f"Cached responses ({len(keys)}) + finished responses ({len(resps)}) exceed num_seqs ({origin_req_id_2_num_seqs[origin_req_id]}) for request {origin_req_id}."
+            if len(resps) + len(keys) == origin_req_id_2_num_seqs[origin_req_id]:
+                # Process the original request with the callback function.
+                output_token_ids = []
+                assert origin_req_id in self.request_metas
+                # Collect cached responses.
+                for key in keys:
+                    token_ids_bytes = self.shared_storage.get(key)
+                    token_ids_arr = array.array("I")
+                    token_ids_arr.frombytes(token_ids_bytes)
+                    token_ids_list = token_ids_arr.tolist()
+                    assert token_ids_list[0] == resp_start_idx, f"Separation index {token_ids_list[0]} does not match expected {resp_start_idx} for request {origin_req_id}."
+                    output_token_ids.append(tuple(token_ids_list[resp_start_idx + 1:]))
+                # Collect responses just finished at this step.
+                for resp_id, resp in resps:
+                    previous_output_token_ids = list(resp.prompt_token_ids[resp_start_idx:])
+                    output_token_ids.append(tuple(previous_output_token_ids + list(resp.outputs[0].token_ids)))
+                output_data = DataProto(meta_info=self.request_metas[origin_req_id])
+                output_data.meta_info["output_token_ids"] = output_token_ids
+                print("=== request_complete_callback for migrated request:", origin_req_id)
+                request_complete_callback(data=output_data)
+            else:
+                # Cache finished migrated responses.
+                # Set separation index according to exising finished responses.
+                for resp_id, resp in resps:
+                    all_token_ids = [resp_start_idx] + list(resp.prompt_token_ids) + list(resp.outputs[0].token_ids)
+                    serialized_tokens = array.array('I', all_token_ids)
+                    shard_storage_pipeline.set(f"finished_token_ids_{origin_req_id}_{resp_id}", serialized_tokens.tobytes())
+        shard_storage_pipeline.execute()
+
         # 转成response id, request_complete_callback
-        for request_output in vllm_outputs:
+        # Deal with normal requests.
+        # Do not process requests that have only one response here, which means they are migrated responses.
+        # Instead, process normal requests that have multiple responses and are not migrated.
+        normal_req_ids = [req.request_id for req in normal_reqs]
+        normal_req_ids_set = set(normal_req_ids)
+        # TODO: Lunxi: For duplicate requests returned by engine, just ignore them temporarily.
+        if len(normal_req_ids_set) != len(normal_req_ids):
+            duplicate_req_ids = []
+            for req_id in normal_req_ids_set:
+                if normal_req_ids.count(req_id) > 1:
+                    duplicate_req_ids.append(req_id)
+            print(f"=== normal reqs: {[req.request_id for req in normal_reqs]} migrated resps: {[resp.request_id for resp in migrated_resps]} duplicate req ids: {duplicate_req_ids}")
+        for request_output in normal_reqs:
+            if request_output.request_id not in normal_req_ids_set:
+                continue
+            normal_req_ids_set.remove(request_output.request_id)
             output_token_ids = []
             request_id = request_output.request_id
             if request_id not in self.request_metas:
                 continue
-            previous_output_token_ids = []
-            if request_id in self.req_id_2_resp_start_idx:
-                resp_start_idx = self.req_id_2_resp_start_idx[request_id]
-                print(f"==== find start idx={resp_start_idx}")
-                previous_output_token_ids += list(request_output.prompt_token_ids[resp_start_idx:])
             for completion_output in request_output.outputs:
-                output_token_ids.append(tuple(previous_output_token_ids + list(completion_output.token_ids)))
+                output_token_ids.append(completion_output.token_ids)
             output_data = DataProto(meta_info=self.request_metas[request_id])
             output_data.meta_info["output_token_ids"] = output_token_ids
+            print("=== request_complete_callback for unmigrated request:", request_id)
             request_complete_callback(data=output_data)
+        assert len(normal_req_ids_set) == 0
 
     def start_server(self, data: DataProto, request_complete_callback):
         collective.barrier(group_name=self.group_name)
@@ -184,6 +261,24 @@ class VllmStrategy(InferenceStrategy):
                     attention_mask = batch.batch["attention_mask"]
                     request_id = batch.meta_info["request_id"]
                     self.request_metas[request_id] = batch.meta_info
+                    # Add the meta info of the original request if adding a migrated response.
+                    # Meta info of the original request is similar to that of every migrated response of it,
+                    # while the latter has additional fields 'origin_request_id' and 'resp_start_idx',
+                    # modified 'request_id' and modified 'num_return_sequences'.
+                    if "origin_request_id" in batch.meta_info:
+                        origin_req_id, _, num_seqs = batch.meta_info["request_id"].split("_")
+                        assert origin_req_id == batch.meta_info["origin_request_id"]
+                        if origin_req_id not in self.request_metas:
+                            origin_req_meta_info = copy.deepcopy(batch.meta_info)
+                            origin_req_meta_info["request_id"] = origin_req_meta_info.pop("origin_request_id")
+                            origin_req_meta_info.pop("resp_start_idx")
+                            origin_req_meta_info["generation_config"]["num_return_sequences"] = num_seqs
+                            self.request_metas[origin_req_id] = origin_req_meta_info
+                        else:
+                            origin_req_meta_info = self.request_metas[origin_req_id]
+                            assert origin_req_meta_info["request_id"] == origin_req_id
+                            assert origin_req_meta_info["generation_config"]["num_return_sequences"] == num_seqs
+
                     generation_config = batch.meta_info.get("generation_config")
                     max_new_tokens = batch.meta_info.get("max_new_tokens", generation_config["max_new_tokens"])
                     max_new_tokens = min(max_new_tokens, generation_config["max_new_tokens"])
@@ -195,7 +290,11 @@ class VllmStrategy(InferenceStrategy):
                         request_ids=[request_id], prompt_token_ids=prompt_token_ids, sampling_params=sampling_params
                     )
                     if 'resp_start_idx' in batch.meta_info:
-                        self.req_id_2_resp_start_idx[request_id] = batch.meta_info['resp_start_idx']
+                        origin_req_id = batch.meta_info['origin_request_id']
+                        if origin_req_id in self.req_id_2_resp_start_idx:
+                            assert self.req_id_2_resp_start_idx[origin_req_id] == batch.meta_info['resp_start_idx']
+                        else:
+                            self.req_id_2_resp_start_idx[origin_req_id] = batch.meta_info['resp_start_idx']
                 elif command == GenerateRequestType.MIGRATE:
                     # print(f"[Worker {os.getpid()}] Migrate {batch}")
                     assert self.shared_storage is not None, "Cannot migrate requests due to no redis found."
@@ -204,16 +303,29 @@ class VllmStrategy(InferenceStrategy):
                         my_rank = batch.meta_info["my_rank"]
                         dst_rank = batch.meta_info["dst_rank"]
                         desired_req_ids = batch.meta_info['req_ids']
-                        reqs_to_migrate = self.model.fetch_responses_to_migrate(desired_req_ids)
+                        reqs_to_migrate, finished_reqs = self.model.fetch_responses_to_migrate(desired_req_ids)
+                        # If desired requests has been finished, we can directly process them.
+                        self.process_vllm_output(vllm_outputs=finished_reqs, request_complete_callback=request_complete_callback)
+                        num_resps_to_migrate = {}
                         for req_output in reqs_to_migrate:
+                            # For each request, cache its finished responses in shared storage first,
+                            # when migrated responses get finished, we can merge them and process this request with all responses finished.
                             for resp_id, output_response in enumerate(req_output.outputs):
                                 print(f"=== token_ids_{req_output.request_id}_{resp_id}: prompt_length={len(req_output.prompt_token_ids)} output_length={len(output_response.token_ids)}")
                                 # all_token_ids: [0] is the seperation index of prompt and response, [1:sep_idx+1] are prompt tokens, [sep_idx+1:] are response tokens
                                 all_token_ids = [len(req_output.prompt_token_ids)] + list(req_output.prompt_token_ids) + list(output_response.token_ids)
                                 serialized_tokens = array.array('I', all_token_ids)
-                                migrate_pipeline.set(f"token_ids_{my_rank}_{dst_rank}_{req_output.request_id}_{resp_id}", serialized_tokens.tobytes())
+                                if output_response.finish_reason is None:
+                                    migrate_pipeline.set(f"token_ids_{my_rank}_{dst_rank}_{req_output.request_id}_{resp_id}", serialized_tokens.tobytes())
+                                else:
+                                    # Cache finished responses to merge with migrated responses in the future to finish this request.
+                                    migrate_pipeline.set(f"finished_token_ids_{req_output.request_id}_{resp_id}", serialized_tokens.tobytes())
+                            num_finished_resps = len([resp for resp in req_output.outputs if resp.finish_reason is not None])
+                            num_resps_to_migrate[req_output.request_id] = len(req_output.outputs) - num_finished_resps
+                            print(f"=== migrate request: {req_output.request_id}, finished responses: {num_finished_resps}, responses to migrate: {num_resps_to_migrate[req_output.request_id]}")
                             print(f"*** abort request: {req_output.request_id}")
                             self.model.abort_request(request_id=req_output.request_id)
+                        print(f"=== migrate {sum(num_resps_to_migrate.values())} responses: {num_resps_to_migrate}")
                     migrate_pipeline.execute()
                     self.shared_storage.publish("migrate_progress", f"done_{my_rank}_{dst_rank}")
 

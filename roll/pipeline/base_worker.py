@@ -1,3 +1,4 @@
+import copy
 import os
 import threading
 import time
@@ -381,6 +382,9 @@ class ActorWorker(Worker):
             generation_config["pad_token_id"] = self.tokenizer.pad_token_id
             data.meta_info["generation_config"] = generation_config
             self.response_call_back_fns[data.meta_info["request_id"]] = data.meta_info.pop("response_callback_fn")
+            # Add the response callback function of the original request if adding a migrated response.
+            if "origin_request_id" in data.meta_info and data.meta_info["origin_request_id"] not in self.response_call_back_fns:
+                self.response_call_back_fns[data.meta_info["origin_request_id"]] = copy.deepcopy(self.response_call_back_fns[data.meta_info["request_id"]])
         self.strategy.add_request(command=command, data=data)
         return DataProto(meta_info={"request_counts": len(self.response_call_back_fns)})
 
