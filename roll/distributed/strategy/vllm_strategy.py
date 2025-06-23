@@ -3,6 +3,7 @@ import gc
 import os
 import itertools
 import redis
+import time
 import array
 import queue
 from concurrent import futures
@@ -47,6 +48,7 @@ class VllmStrategy(InferenceStrategy):
         self.req_id_2_resp_start_idx = {}
         self.group_name = "vllm_worker_default"
         self.running = False
+        self.ready = False
 
     def initialize(self, model_provider):
         set_seed(seed=self.worker.pipeline_config.seed)
@@ -250,9 +252,25 @@ class VllmStrategy(InferenceStrategy):
             request_complete_callback(data=output_data)
         assert len(normal_req_ids_set) == 0
 
-    def start_server(self, data: DataProto, request_complete_callback):
-        collective.barrier(group_name=self.group_name)
+    def start_server(self, data: DataProto, request_complete_callback, offload_manager):
+        # collective.barrier(group_name=self.group_name)
         self.running = True
+        self.ready = False
+
+        # Block start_server execution here, wait for a running signal from the shared storage
+        if self.shared_storage is not None:
+            while True:
+                status_bytes = self.shared_storage.get(self.worker.worker_name + "_status")
+                if status_bytes is not None:
+                    status_str = status_bytes.decode()
+                    if status_str == 'running':
+                        print("=== Got running signal!")
+                        break
+                time.sleep(0.1)
+        # Enter the offload manager, GPU memory will be allocated after here.
+        offload_manager.__enter__()
+        self.ready = True
+
         while True:
             while not self.command_queue.empty():
                 command, batch = self.command_queue.get_nowait()
