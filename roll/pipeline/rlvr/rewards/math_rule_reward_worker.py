@@ -159,7 +159,7 @@ class MathRuleRewardWorker(Worker):
                         response, f"${answer}$"
                     )
             except Exception as e:
-                self.logger.error(f"timeout answer: {answer}, response: {response}")
+                self.logger.error(f"timeout answer")
                 correct = False
                 extracted_response = ""
                 extracted_ground_truth = ""
@@ -176,7 +176,7 @@ class MathRuleRewardWorker(Worker):
                 )
                 self.logger.debug(f"answer check: {outputs}")
             except Exception as e:
-                self.logger.error(f"answer check except: {e}")
+                self.logger.error(f"answer check except")
 
             if correct:
                 verify_answer.append(1)
