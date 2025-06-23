@@ -158,25 +158,27 @@ class VllmStrategy(InferenceStrategy):
         return output
 
     def process_vllm_output(self, vllm_outputs: List[RequestOutput], request_complete_callback):
-        # TODO: Lunxi: Assume num_return_sequences > 1.
+        # We use the request id format to distinguish migrated responses and normal requests.
+        # Request id of a migrated response is like f"{req_id}_{resp_id}_{num_seqs}".
         shard_storage_pipeline = self.shared_storage.pipeline()
         migrated_resps: List[RequestOutput] = []
         normal_reqs: List[RequestOutput] = []
         for output_request in vllm_outputs:
-            if len(output_request.outputs) == 1:
+            if "_" in output_request.request_id:
+                assert len(output_request.request_id.split("_")) == 3
+                assert len(output_request.outputs) == 1, "Migrated response should have only one output."
                 migrated_resps.append(output_request)
             else:
                 normal_reqs.append(output_request)
         # print(f"=== normal reqs: {[req.request_id for req in normal_reqs]} migrated resps: {[resp.request_id for resp in migrated_resps]}")
 
         # Deal with migrated responses.
-        # For a request that have only one response, which means it's a migrated response of its original request,
-        # do not process it, check if its original request has been finished instead.
+        # For a migrated response, do not process it, check if its original request has been finished instead.
         # If so, collect responses and then process the original request, else cache it in shared storage.
         origin_req_id_2_num_seqs = {}
         origin_req_id_2_resps = {}
         for migrated_resp in migrated_resps:
-            # migrated_request id is like f"{req_id}_{resp_id}_{num_seqs}"
+            # Request id of a migrated response is like f"{req_id}_{resp_id}_{num_seqs}".
             origin_req_id, resp_id, num_seqs, = migrated_resp.request_id.split("_")
 
             if origin_req_id not in origin_req_id_2_num_seqs:
@@ -225,8 +227,6 @@ class VllmStrategy(InferenceStrategy):
 
         # 转成response id, request_complete_callback
         # Deal with normal requests.
-        # Do not process requests that have only one response here, which means they are migrated responses.
-        # Instead, process normal requests that have multiple responses and are not migrated.
         normal_req_ids = [req.request_id for req in normal_reqs]
         normal_req_ids_set = set(normal_req_ids)
         # TODO: Lunxi: For duplicate requests returned by engine, just ignore them temporarily.
