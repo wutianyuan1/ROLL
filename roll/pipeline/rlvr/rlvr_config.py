@@ -272,6 +272,10 @@ class RLVRConfig(BaseConfig):
             self.tag_2_domain = {
                 tag: key for key, worker_config in self.rewards.items() for tag in worker_config.tag_included
             }
+        # Madoka: the max_running_requests should match the vLLM's max_num_seqs, otherwise queuing will happen.
+        if self.actor_infer.strategy_args.strategy_name == 'vllm':
+            max_num_seqs = int(self.actor_infer.strategy_args.strategy_config.get("max_num_seqs", "256"))
+            self.max_running_requests = max_num_seqs // self.num_return_sequences_in_group
 
     def set_max_steps(self, max_steps: int):
         actor_backward_batch_size = (

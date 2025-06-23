@@ -184,9 +184,10 @@ class ActorWorker(Worker):
             is_offload_states=is_offload_states,
             load_kwargs={"include": [OffloadStateType.model_params]},
         )
-        self.offload_manager.__enter__()
+        # self.offload_manager.__enter__()
+        # Madoka: enter the offload_manager to allocate CUDA memory when the strategy actually starts.
         self.thread_server = threading.Thread(
-            target=self.strategy.start_server, kwargs=dict(data=data, request_complete_callback=self.request_complete)
+            target=self.strategy.start_server, kwargs=dict(data=data, request_complete_callback=self.request_complete, offload_manager=self.offload_manager)
         )
         self.thread_server.start()
         while not self.strategy.running:
@@ -360,10 +361,13 @@ class ActorWorker(Worker):
         generation_config, 按request设置
         """
         if command == GenerateRequestType.ALIVE_CHECK:
+            status = "unknown"
             if self.thread_server is not None:
                 if not self.thread_server.is_alive():
                     raise Exception("thread server has stopped unexpectedly. check stderr for more info.")
-            output = DataProto(meta_info={"request_counts": len(self.response_call_back_fns)})
+                else:
+                    status = "ready" if self.strategy.ready else "waiting"
+            output = DataProto(meta_info={"request_counts": len(self.response_call_back_fns), "status": status})
             return output
         elif command == GenerateRequestType.ADD:
             assert "response_callback_fn" in data.meta_info, "response_callback_fn is not in data.meta_info"

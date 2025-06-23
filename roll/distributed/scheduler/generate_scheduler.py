@@ -355,7 +355,6 @@ class DynamicSamplingScheduler:
         self.request_id_2_dp_rank = {}
         self.requests_buffers: Dict[str, DataProto] = {}
         self.lock = threading.Lock()
-        self.last_alive_check = time.time()
         self.dataset_iter_count = 0
         self.exception_queue = queue.Queue()
         self.running = False
@@ -367,6 +366,9 @@ class DynamicSamplingScheduler:
         self.max_additional_running_prompts = self.pipeline_config.max_additional_running_prompts
         self.is_use_additional_prompts = self.pipeline_config.is_use_additional_prompts
         self.alive_check_interval = self.pipeline_config.alive_check_interval
+
+        # HACK: We need to check alive at the beginning to get correct initial DP workers.
+        self.last_alive_check = time.time() - self.alive_check_interval
 
         self.actor_cluster = None
         self.reward_clusters = None
@@ -503,6 +505,7 @@ class DynamicSamplingScheduler:
         request_id_2_request = {}
         migration_scheduler: MigrationSchedulerBase = NaiveMigrationScheduler()
         get_worker_stat_fns = [self.actor_cluster.workers[i].get_stats for i in range(len(self.actor_cluster.workers))]
+        ready_workers = []
         while True:
             if (
                 sum([len(v) for v in list(self.completed_buffers.values())[:]])
@@ -510,7 +513,17 @@ class DynamicSamplingScheduler:
             ):
                 self.running = False
                 break
-            self.check_worker_alive(self.actor_cluster)
+            worker_status = self.check_worker_alive(self.actor_cluster)
+            # For skipped iterations, worker_status will be [] due to no checks are performed.
+            # For non-skip iterations, we update ready_workers based on the new worker_status.
+            if len(worker_status) != 0:
+                print(f"=== alive check: {worker_status}")
+                ready_workers = [i for i in range(len(worker_status)) if worker_status[i] == 'ready']
+            if len(ready_workers) == 0:
+                print(f"*** No available workers, current status: {worker_status}")
+                time.sleep(1)
+                continue
+
             self.check_response_callback()
 
             # Madoka: the request migration logic based on re-calculation
@@ -625,7 +638,9 @@ class DynamicSamplingScheduler:
                 mig_end_t = time.time()
                 print(f"==== migrate {sum([len(i) for i in migrate_src_dst.values()])} requests ({len(reqs_to_migrate)} responses), costs {mig_end_t - mig_start_t}s.")
 
-            if not self.check_send_new_request():
+            # Besides no new requests, we should also skip this iteration if all dp ranks are full.
+            dp_rank = self.get_available_dp_rank_no_wait(ready_workers)
+            if dp_rank is None or (not self.check_send_new_request()):
                 time.sleep(1)
                 continue
 
@@ -638,7 +653,7 @@ class DynamicSamplingScheduler:
             # replica, redundancy
             request_data_list = self.expand_requests(request_data)
 
-            dp_rank = next(self.get_available_dp_rank())
+            # dp_rank = next(self.get_available_dp_rank())
             with self.lock:
                 self.prompt_use_count += 1
                 self.running_prompts += 1
@@ -657,6 +672,7 @@ class DynamicSamplingScheduler:
                             command=GenerateRequestType.ADD, data=req
                         )
                     )
+                    print(f"=== add request {request_id} to worker-{dp_rank}, t={time.time()}")
                     req.meta_info.pop("response_callback_fn")
                     self.load_balance_coordinator[dp_rank] += 1
                     self.dp_fetch_count[dp_rank] += 1
@@ -859,9 +875,12 @@ class DynamicSamplingScheduler:
     def check_worker_alive(self, cluster):
         # 探测dp worker是否存活，dp worker的server thread可能由于异常退出，造成hang
         current_time = time.time()
+        alive_status = []
         if current_time - self.last_alive_check >= self.alive_check_interval:
-            cluster.add_request(command=GenerateRequestType.ALIVE_CHECK, data=DataProto())
+            worker_info = cluster.add_request(command=GenerateRequestType.ALIVE_CHECK, data=DataProto())
             self.last_alive_check = current_time
+            alive_status = [w.meta_info["status"] for w in worker_info]
+        return alive_status
 
     def check_response_callback(self):
         if self.exception_queue.qsize() > 0:
@@ -884,6 +903,16 @@ class DynamicSamplingScheduler:
             )
             if self.load_balance_coordinator[sorted_ranks[0]] < self.max_running_requests:
                 yield sorted_ranks[0]
+
+    def get_available_dp_rank_no_wait(self, ready_workers):
+        # 负载均衡逻辑，期望各dp 正在处理的条数基本接近
+        sorted_ranks = sorted(
+            self.load_balance_coordinator.keys(), key=lambda rank: (self.load_balance_coordinator[rank], rank)
+        )
+        for rank in sorted_ranks:
+            if (rank in ready_workers) and (self.load_balance_coordinator[rank] < self.max_running_requests):
+                return rank
+        return None
 
 
 @ray.remote

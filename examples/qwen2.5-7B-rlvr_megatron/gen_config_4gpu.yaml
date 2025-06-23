@@ -38,6 +38,9 @@ logging_steps: 1
 eval_steps: 1
 resume_from_checkpoint: false
 
+# alive check should be frequent when migration is enabled.
+alive_check_interval: 1
+
 # prompt
 rollout_batch_size: 128
 prompt_length: 2048
