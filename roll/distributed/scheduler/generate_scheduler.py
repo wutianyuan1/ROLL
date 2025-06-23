@@ -480,7 +480,9 @@ class DynamicSamplingScheduler:
         )
 
     def clear_token_ids_from_shared_storage(self):
-        keys = self.shared_storage.keys("token_ids_*")
+        # token_ids_*: for launching migration for unfinished responses
+        # finished_token_ids_*: for caching finished responses
+        keys = self.shared_storage.keys("token_ids_*") + self.shared_storage.keys("finished_token_ids_*")
         pipeline = self.shared_storage.pipeline()
         for key in keys:
             pipeline.delete(key)
@@ -564,7 +566,14 @@ class DynamicSamplingScheduler:
                         token_ids_tensor = torch.tensor([token_ids_list[1:]], device='cpu', dtype=torch.int64)
                         attention_mask = torch.ones_like(token_ids_tensor, device='cpu', dtype=torch.int64)
                         # Construct a new request from the original one, change data but keep metadata, and add it to the dst worker
-                        new_req: DataProto = request_id_2_request[req_id]
+                        # We should use different request_id for each migrated response of a request.
+                        # Deepcopy the request, as one original request may have multiple responses to migrate.
+                        new_req: DataProto = copy.deepcopy(request_id_2_request[req_id])
+                        num_seqs = new_req.meta_info["generation_config"]["num_return_sequences"]
+                        new_req.meta_info["request_id"] = f"{req_id}_{resp_id}_{num_seqs}"
+                        new_req.meta_info["origin_request_id"] = f"{req_id}"
+                        # New request has only one response.
+                        new_req.meta_info["generation_config"]["num_return_sequences"] = 1
                         new_req.batch = TensorDict(
                             {
                                 "attention_mask": attention_mask,
@@ -574,6 +583,7 @@ class DynamicSamplingScheduler:
                             batch_size=1
                         )
                         new_req.meta_info['resp_start_idx'] = resp_start_idx
+                        assert src_rank == self.request_id_2_dp_rank[new_req.meta_info["origin_request_id"]]
                         reqs_to_migrate.append((new_req, src_rank, dst_rank))
                         print(f"==== Got key={key}, req_id={req_id}, resp_id={resp_id}, num_tokens={len(token_ids_list) - 1}")
                         keys_scanned += 1
@@ -588,21 +598,32 @@ class DynamicSamplingScheduler:
                     if processed_migrations >= len(migrate_src_dst):
                         break
                 with self.lock:
+                    origin_req_ids = set()
                     for req, src_rank, dst_rank in reqs_to_migrate:
-                        assert self.request_id_2_dp_rank[req.meta_info['request_id']] == src_rank,\
-                            f"Rank not equal, got {self.request_id_2_dp_rank[req.meta_info['request_id']]} (should be {src_rank})"
-                        print(f"==== migrate from {src_rank} to {dst_rank}")
-                        self.request_id_2_dp_rank[req.meta_info["request_id"]] = dst_rank
+                        origin_req_id = req.meta_info["origin_request_id"]
+                        if origin_req_id not in origin_req_ids:
+                            # For the first migrated response of an original request.
+                            assert self.request_id_2_dp_rank[origin_req_id] == src_rank,\
+                                f"Rank of request {req.meta_info['request_id']} not equal, got {self.request_id_2_dp_rank[origin_req_id]} (should be {src_rank})"
+                            self.request_id_2_dp_rank[origin_req_id] = dst_rank
+                        else:
+                            # For remaining migrated responses of an original request.
+                            assert self.request_id_2_dp_rank[origin_req_id] == dst_rank,\
+                                f"Rank of request {req.meta_info['request_id']} not equal, got {self.request_id_2_dp_rank[origin_req_id]} (should be {dst_rank})"
+                        print(f"==== migrate {req.meta_info['request_id']} from {src_rank} to {dst_rank}")
                         ray.get(
                             self.actor_cluster.workers[dst_rank].add_request.remote(
                                 command=GenerateRequestType.ADD, data=req
                             )
                         )
                         req.meta_info.pop("response_callback_fn")
-                        self.load_balance_coordinator[src_rank] -= 1
+                        # As one request may have multiple responses to migrate, we should avoid updating more than once.
+                        if origin_req_id not in origin_req_ids:
+                            self.load_balance_coordinator[src_rank] -= 1
                         self.load_balance_coordinator[dst_rank] += 1
+                        origin_req_ids.add(origin_req_id)
                 mig_end_t = time.time()
-                print(f"==== migrate {sum([len(i) for i in migrate_src_dst.values()])} requests, costs {mig_end_t - mig_start_t}s.")
+                print(f"==== migrate {sum([len(i) for i in migrate_src_dst.values()])} requests ({len(reqs_to_migrate)} responses), costs {mig_end_t - mig_start_t}s.")
 
             if not self.check_send_new_request():
                 time.sleep(1)

@@ -170,3 +170,4 @@ cython_debug/
 log
 # examples
 roll/multi_tenant/feijiu/
+./worker_scheduler

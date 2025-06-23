@@ -147,6 +147,7 @@ class Llm084(LLM):
 
     def fetch_responses_to_migrate(self, req_ids: List[str]):
         output_list = []
+        finished_output_list = []
         # simulating non blocking semantic when using v1 engine
         if envs.VLLM_USE_V1:
             try:
@@ -155,14 +156,19 @@ class Llm084(LLM):
                 request_outputs = []
         else:
             request_outputs = self.llm_engine.step()
-        print(f"==== return {len(request_outputs)} resps")
+        print(f"==== return {len(request_outputs)} reqs")
         # TODO: Madoka: If the request accidently finished at here, we need to add a normal callback
         # and should not trigger migration. I am not sure if migrating a finished request is correct.
         for request_output in request_outputs:
             print(f"==== want: {req_ids}, current req_id = {request_output.request_id}, finished: {request_output.finished}")
             if request_output.request_id in req_ids:
-                output_list.append(request_output)
-        return output_list
+                if not request_output.finished:
+                    output_list.append(request_output)
+                else:
+                    finished_output_list.append(request_output)
+        # Let the strategy process finished requests normally with process_vllm_output().
+        # TODO: Lunxi: Maybe we should assert len(req_ids) == len(output_list) + len(finished_output_list) here?
+        return output_list, finished_output_list
 
     def get_num_waiting(self):
         stats = self.llm_engine._get_stats(scheduler_outputs=None)

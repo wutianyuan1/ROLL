@@ -62,7 +62,9 @@ class NaiveMigrationScheduler(MigrationSchedulerBase):
             worker_stats: List[EngineStats] = [ray.get(fn.remote()) for fn in get_worker_stat_fns]
             engine_unfinished_reqs = [i.num_unfinished_reqs for i in worker_stats]
             print(f"==== scheduler check: migrated={self.migrated}, since_start={current_time - self.start_time}, engine_unfinished_reqs={engine_unfinished_reqs}, request_mapping_len={len(request_mapping)}")
-            assert sum(engine_unfinished_reqs) == len(request_mapping), f"engine_unfinished_reqs({sum(engine_unfinished_reqs)}) != request_mapping_len({len(request_mapping)})"
+            # TODO: Lunxi: This equation does not hold when num_return_sequences > 1,
+            # as EngineStats.num_unfinished_reqs counts the number of unfinished responses in fact.
+            # assert sum(engine_unfinished_reqs) == len(request_mapping), f"engine_unfinished_reqs({sum(engine_unfinished_reqs)}) != request_mapping_len({len(request_mapping)})"
             per_worker_reqs = self._aggregate_reqs(request_mapping)
             print(f"==== per-worker {per_worker_reqs}")
             return {(0, 1): per_worker_reqs[0], (2, 1): per_worker_reqs[2], (3, 1): per_worker_reqs[3]}

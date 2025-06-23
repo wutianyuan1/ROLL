@@ -43,7 +43,7 @@ rollout_batch_size: 128
 prompt_length: 2048
 response_length: 4096
 
-num_return_sequences_in_group: 1
+num_return_sequences_in_group: 4
 ppo_epochs: 1
 adv_estimator: "reinforce"
 
