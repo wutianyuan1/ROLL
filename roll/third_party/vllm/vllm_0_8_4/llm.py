@@ -146,8 +146,8 @@ class Llm084(LLM):
         return output_list
 
     def fetch_responses_to_migrate(self, req_ids: List[str]):
-        output_list = []
-        finished_output_list = []
+        output_list = [] # requests to migrate, which have ids in `req_ids` and are not finished
+        finished_output_list = [] # requests that are finished
         # simulating non blocking semantic when using v1 engine
         if envs.VLLM_USE_V1:
             try:
@@ -161,11 +161,10 @@ class Llm084(LLM):
         # and should not trigger migration. I am not sure if migrating a finished request is correct.
         for request_output in request_outputs:
             print(f"==== want: {req_ids}, current req_id = {request_output.request_id}, finished: {request_output.finished}")
-            if request_output.request_id in req_ids:
-                if not request_output.finished:
-                    output_list.append(request_output)
-                else:
-                    finished_output_list.append(request_output)
+            if request_output.finished:
+                finished_output_list.append(request_output)
+            elif request_output.request_id in req_ids:
+                output_list.append(request_output)
         # Let the strategy process finished requests normally with process_vllm_output().
         # TODO: Lunxi: Maybe we should assert len(req_ids) == len(output_list) + len(finished_output_list) here?
         return output_list, finished_output_list
