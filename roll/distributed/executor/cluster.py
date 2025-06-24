@@ -99,7 +99,9 @@ class Cluster:
         for rank, pgs in enumerate(placement_groups):
             deploy_pg = pgs[0]
             pg_zero_gpu_ranks = sorted([pg["gpu_rank"] for pg in pgs if pg["node_rank"] == deploy_pg["node_rank"]])
-            worker_name = f"{self.cluster_name}-{rank}"
+            # Add TENANT_NAME as a prefix before cluster name to distinguish different tenants
+            tenant_name = os.getenv("TENANT_NAME", "Default")
+            worker_name = f"{tenant_name}-{self.cluster_name}-{rank}"
             env_vars = {
                 "WORLD_SIZE": str(self.world_size),
                 "RANK": str(rank),
