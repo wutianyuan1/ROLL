@@ -482,9 +482,10 @@ class DynamicSamplingScheduler:
         )
 
     def clear_token_ids_from_shared_storage(self):
-        # token_ids_*: for launching migration for unfinished responses
-        # finished_token_ids_*: for caching finished responses
-        keys = self.shared_storage.keys("token_ids_*") + self.shared_storage.keys("finished_token_ids_*")
+        # For launching migration for unfinished responses: token_ids_*, token_latencies_*
+        # For caching finished responses: finished_token_ids_*, finished_token_latencies_*
+        keys = self.shared_storage.keys("token_ids_*") + self.shared_storage.keys("finished_token_ids_*")\
+                    + self.shared_storage.keys("token_latencies_*") + self.shared_storage.keys("finished_token_latencies_*")
         pipeline = self.shared_storage.pipeline()
         for key in keys:
             pipeline.delete(key)
@@ -517,7 +518,7 @@ class DynamicSamplingScheduler:
             # For skipped iterations, worker_status will be [] due to no checks are performed.
             # For non-skip iterations, we update ready_workers based on the new worker_status.
             if len(worker_status) != 0:
-                print(f"=== alive check: {worker_status}")
+                # print(f"=== alive check: {worker_status}")
                 ready_workers = [i for i in range(len(worker_status)) if worker_status[i] == 'ready']
             if len(ready_workers) == 0:
                 print(f"*** No available workers, current status: {worker_status}")
@@ -566,6 +567,18 @@ class DynamicSamplingScheduler:
                     src_rank, dst_rank = int(src_rank), int(dst_rank)
                     expect_num_keys = len(migrate_src_dst[(src_rank, dst_rank)])
                     keys_scanned = 0
+                    # Before scan token_ids of responses to migrate, scan their token_latencies.
+                    resp_2_token_latencies = {}
+                    for key in self.shared_storage.scan_iter(match=f'token_latencies_{src_rank}_{dst_rank}*'):
+                        key = key.decode()
+                        items = key.split("_")
+                        req_id, resp_id = int(items[4]), int(items[5])
+                        token_latencies_bytes = self.shared_storage.get(key)
+                        token_latencies_arr = array.array("f")
+                        token_latencies_arr.frombytes(token_latencies_bytes)
+                        token_latencies_list = token_latencies_arr.tolist()
+                        resp_2_token_latencies[f"{req_id}_{resp_id}"] = token_latencies_list
+                    # Scan token_ids of responses to migrate.
                     for key in self.shared_storage.scan_iter(match=f'token_ids_{src_rank}_{dst_rank}*'):
                         key = key.decode()
                         items = key.split("_")
@@ -585,6 +598,10 @@ class DynamicSamplingScheduler:
                         num_seqs = new_req.meta_info["generation_config"]["num_return_sequences"]
                         new_req.meta_info["request_id"] = f"{req_id}_{resp_id}_{num_seqs}"
                         new_req.meta_info["origin_request_id"] = f"{req_id}"
+                        token_latencies = resp_2_token_latencies.pop(f"{req_id}_{resp_id}")
+                        # For migrated responses, do an intermediate check for token_latencies.
+                        assert len(token_ids_list) - resp_start_idx - 1 == len(token_latencies)
+                        new_req.meta_info["token_latencies"] = token_latencies
                         # New request has only one response.
                         new_req.meta_info["generation_config"]["num_return_sequences"] = 1
                         new_req.batch = TensorDict(
@@ -606,6 +623,7 @@ class DynamicSamplingScheduler:
                         print(f"==== Call stopserver to worker {src_rank} due to no active requests on it, current engine stats: {src_worker_stats}")
                         self.actor_cluster.workers[src_rank].stop_server.remote()
                     keys_scanned == expect_num_keys, f"Keys count not match: expected({expect_num_keys}) != got({keys_scanned})!"
+                    assert len(resp_2_token_latencies) == 0
                     # If all migration requests are processed, break
                     processed_migrations += 1
                     if processed_migrations >= len(migrate_src_dst):
