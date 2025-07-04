@@ -230,15 +230,14 @@ class VllmStrategy(InferenceStrategy):
                     # print(f"=== migrated request {origin_req_id}'s response {resp_id} #token_ids: {len(output_token_ids[-1])} #token_latencies: {len(output_token_latencies[-1])}")
                     # Metric
                     ttft[resp_id] = output_token_latencies[-1][0]
-                    tpot[resp_id] = sum(output_token_latencies[-1][1:]) / (len(output_token_latencies[-1]) - 1)
+                    tpot[resp_id] = sum(output_token_latencies[-1]) / len(output_token_latencies[-1])
                     previous_tokens_num = int(token_latencies_list[0])
                     if previous_tokens_num != len(output_token_latencies[-1]): # Check if this response is migrated
                         assert previous_tokens_num < len(output_token_latencies[-1])
                         re_prefill[resp_id] = output_token_latencies[-1][previous_tokens_num]
-                        tmax[resp_id] = max(output_token_latencies[-1][:previous_tokens_num] + output_token_latencies[-1][previous_tokens_num + 1:])
                     else:
                         re_prefill[resp_id] = None
-                        tmax[resp_id] = max(output_token_latencies[-1])
+                    tmax[resp_id] = max(output_token_latencies[-1])
                 # Collect responses just finished at this step.
                 for resp_id, resp in resps:
                     # For token_ids
@@ -253,9 +252,11 @@ class VllmStrategy(InferenceStrategy):
                     # print(f"=== migrated request {origin_req_id}'s response {resp_id} #token_ids: {len(output_token_ids[-1])} #token_latencies: {len(output_token_latencies[-1])}")
                     # Metric
                     ttft[resp_id] = output_token_latencies[-1][0]
-                    tpot[resp_id] = sum(output_token_latencies[-1][1:]) / (len(output_token_latencies[-1]) - 1)
+                    tpot[resp_id] = sum(output_token_latencies[-1]) / len(output_token_latencies[-1])
                     re_prefill[resp_id] = output_token_latencies[-1][len(previous_token_latencies)]
-                    tmax[resp_id] = max(output_token_latencies[-1][:len(previous_token_latencies)] + output_token_latencies[-1][len(previous_token_latencies) + 1:])
+                    tmax[resp_id] = max(output_token_latencies[-1])
+                    # with open("./metrics.log", 'a') as f:
+                    #     f.write(f"{origin_req_id}_{resp_id} {' '.join([f'{v:.3f}' for v in ([float(len(previous_token_latencies))] + output_token_latencies[-1])])}\n")
                 output_data = DataProto(meta_info=self.request_metas[origin_req_id])
                 output_data.meta_info["output_token_ids"] = output_token_ids
                 output_data.meta_info["output_token_latencies"] = output_token_latencies
@@ -282,6 +283,8 @@ class VllmStrategy(InferenceStrategy):
                     all_token_latencies = [float(len(previous_token_latencies))] + previous_token_latencies + list(resp.outputs[0].token_latencies)
                     serialized_latencies = array.array('f', all_token_latencies)
                     shard_storage_pipeline.set(f"finished_token_latencies_{origin_req_id}_{resp_id}", serialized_latencies.tobytes())
+                    # with open("./metrics.log", 'a') as f:
+                    #     f.write(f"{origin_req_id}_{resp_id} {' '.join([f'{v:.3f}' for v in all_token_latencies])}\n")
         shard_storage_pipeline.execute()
 
         # 转成response id, request_complete_callback
@@ -318,10 +321,12 @@ class VllmStrategy(InferenceStrategy):
             output_data.meta_info["output_token_latencies"] = output_token_latencies
             # Metric
             ttft = [resp_latencies[0] for resp_latencies in output_token_latencies]
-            tpot = [sum(resp_latencies[1:]) / (len(resp_latencies) - 1) for resp_latencies in output_token_latencies]
+            tpot = [sum(resp_latencies) / len(resp_latencies) for resp_latencies in output_token_latencies]
+            tmax = [max(resp_latencies) for resp_latencies in output_token_latencies]
             print("=== request_complete_callback for unmigrated request:", request_id)
             print("TTFT |", [f'{v:.3f}' for v in ttft])
             print("TPOT |", [f'{v:.3f}' for v in tpot])
+            print("Tmax |", [f'{v:.3f}' for v in tmax])
             request_complete_callback(data=output_data)
         assert len(normal_req_ids_set) == 0
 
@@ -413,14 +418,14 @@ class VllmStrategy(InferenceStrategy):
                                 if output_response.finish_reason is None:
                                     # For token_ids
                                     migrate_pipeline.set(f"token_ids_{my_rank}_{dst_rank}_{req_output.request_id}_{resp_id}", serialized_tokens.tobytes())
-                                    # For token_latencis
+                                    # For token_latencies
                                     serialized_latencies = array.array('f', list(output_response.token_latencies))
                                     migrate_pipeline.set(f"token_latencies_{my_rank}_{dst_rank}_{req_output.request_id}_{resp_id}", serialized_latencies.tobytes())
                                 else:
                                     # For token_ids
                                     # Cache finished responses to merge with migrated responses in the future to finish this request.
                                     migrate_pipeline.set(f"finished_token_ids_{req_output.request_id}_{resp_id}", serialized_tokens.tobytes())
-                                    # For token_latencis
+                                    # For token_latencies
                                     # For finished responses, we need to use the first element to mark the number of previously generated tokens.
                                     # all_token_latencies: [0] is the separation index of previously generated tokens and just generated tokens,
                                     # [1: sep_idx + 1] are latencies of previously generated tokens, [sep_idx + 1:] are latencies of just generated tokens.

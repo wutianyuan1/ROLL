@@ -1,0 +1,4 @@
+[submodule "vllm0.8.4"]
+	path = vllm0.8.4
+	url = https://github.com/1unx1/vllm4roll.git
+	branch = my0.8.4
