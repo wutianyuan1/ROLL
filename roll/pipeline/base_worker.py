@@ -2,7 +2,7 @@ import copy
 import os
 import threading
 import time
-from typing import Union, Optional, Dict
+from typing import Union, Optional, Dict, Any
 
 import ray
 import torch
@@ -162,6 +162,30 @@ class ActorWorker(Worker):
         output.meta_info = {"metrics": metrics}
         return output
 
+    def _strategy_server_wrapper(self,
+                                 strategy: Optional[Union[InferenceStrategy, TrainStrategy]],
+                                 start_server_args: Dict[str, Any]):
+        strategy.running = True
+        strategy.ready = False
+
+        # Block start_server execution here, wait for a running signal from the shared storage
+        if strategy.shared_storage is not None:
+            job_name = os.environ.get("JOB_NAME", "default")
+            status_key = f"{job_name}:generate:{self.rank}:status"
+            # Safety: if the status does not exist, initialize it to "pending"
+            strategy.shared_storage.setnx(status_key, "pending")
+            while True:
+                status_str = strategy.shared_storage.get(status_key)
+                if status_str is None:
+                    continue
+                if status_str == 'running':
+                    break
+                elif status_str == 'terminate':
+                    print(f"[{job_name}:generate:{self.rank}] terminated (not started)")
+                    return
+                time.sleep(0.2)
+        strategy.start_server(offload_manager=self.offload_manager, **start_server_args)
+
     @register(dispatch_mode=Dispatch.ONE_TO_ALL_ONE)
     @torch.no_grad()
     def start_server(self, data: DataProto):
@@ -184,10 +208,13 @@ class ActorWorker(Worker):
             is_offload_states=is_offload_states,
             load_kwargs={"include": [OffloadStateType.model_params]},
         )
-        # self.offload_manager.__enter__()
         # Madoka: enter the offload_manager to allocate CUDA memory when the strategy actually starts.
         self.thread_server = threading.Thread(
-            target=self.strategy.start_server, kwargs=dict(data=data, request_complete_callback=self.request_complete, offload_manager=self.offload_manager)
+            target=self._strategy_server_wrapper,
+            kwargs=dict(
+                strategy=self.strategy,
+                start_server_args=dict(data=data, request_complete_callback=self.request_complete)
+            )
         )
         self.thread_server.start()
         while not self.strategy.running:
@@ -202,15 +229,37 @@ class ActorWorker(Worker):
             print("=== stop server: already stopped!")
             return self.stop_server_metrics
         print(f"==== stop server: thread_server={self.thread_server}")
-
         self.strategy.add_request(command=GenerateRequestType.STOP, data=data)
+
+        # There may be some pending workers that are still waiting for running signal,
+        # we should set status to "terminate" to force them exiting their wait loop.
+        job_name = os.environ.get("JOB_NAME", "default")
+        if self.strategy.shared_storage is not None:
+            status_key = f"{job_name}:generate:{self.rank}:status"
+            self.strategy.shared_storage.set(status_key, "terminate")
+
+        # Then, join thread server is save (no infinite waits)
         self.thread_server.join()
         self.thread_server = None
         self.response_call_back_fns.clear()
-        self.offload_manager.__exit__(None, None, None)
+        # If the strategy has been started, then we shoud offload the GPU memory
+        # Otherwise self.offload_manager was never entered, thus no need to offload
+        if self.strategy.ready:
+            self.offload_manager.__exit__(None, None, None)
         ray.get(self.response_callback_refs)
         self.response_callback_refs.clear()
         self.stop_server_metrics = DataProto(meta_info={"metrics": self.server_metrics})
+
+        # Notify the scheduler
+        if self.strategy.shared_storage is not None:
+            # Reset worker's status to 'pending'
+            status_key = f"{job_name}:generate:{self.rank}:status"
+            self.strategy.shared_storage.set(status_key, "pending")
+            # Release GPUs acquired by this worker
+            device_info = self.get_devices_info()
+            gpus_per_node = int(os.environ.get("GPUS_PER_NODE", 1))
+            global_gpu_ids_str = ",".join([str(i['gpu_rank'] + i['node_rank'] * gpus_per_node) for i in device_info])
+            self.strategy.shared_storage.publish("tenant_events", f"{job_name}:generate:{self.rank}:release_gpu[{global_gpu_ids_str}]")
         return self.stop_server_metrics
 
     def get_stats(self) -> EngineStats:
@@ -366,7 +415,7 @@ class ActorWorker(Worker):
                 if not self.thread_server.is_alive():
                     raise Exception("thread server has stopped unexpectedly. check stderr for more info.")
                 else:
-                    status = "ready" if self.strategy.ready else "waiting"
+                    status = "running" if self.strategy.ready else "pending"
             output = DataProto(meta_info={"request_counts": len(self.response_call_back_fns), "status": status})
             return output
         elif command == GenerateRequestType.ADD:

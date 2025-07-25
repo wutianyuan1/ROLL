@@ -111,44 +111,11 @@ def query_filter_fn(data_list: List[DataProto], config: RLVRConfig) -> bool:
     return True
 
 
-def gen_random_name(length=10):
-    charset = b"abcdefghijklmnopqrstuvwxyz"
-    name_bytes = bytearray()
-    with open("/dev/urandom", "rb") as f:
-        while len(name_bytes) < length:
-            chunk = f.read(length)
-            for b in chunk:
-                idx = b % 26
-                name_bytes.append(charset[idx])
-                if len(name_bytes) == length:
-                    break
-    return name_bytes.decode("ascii")
-
 class RLVRPipeline(BasePipeline):
 
     def __init__(self, pipeline_config: RLVRConfig):
         super().__init__(pipeline_config)
         self.pipeline_config = pipeline_config
-        self.name = gen_random_name()
-        print(f"==== Name: {self.name}")
-        self.master_addr = os.environ.get("MASTER_ADDR", "localhost")
-        self.scheduler_port = int(os.environ.get("SCHEDULER_PORT", 9969))
-        self.report_interval = 0.2
-        self.check_interval = 0.2
-        try:
-            self.shared_storage = redis.StrictRedis(
-                host=self.master_addr,
-                port=self.scheduler_port,
-                db=0,
-                decode_responses=True
-            )
-            self.shared_storage.set("test", "1")
-        except:
-            self.shared_storage = None
-        if self.shared_storage is not None:
-            self.register()
-            self.wait_init()
-
         self.tokenizer = default_tokenizer_provider(model_args=self.pipeline_config.actor_train.model_args)
 
         dataset_paths = []
@@ -344,35 +311,6 @@ class RLVRPipeline(BasePipeline):
         self.running = {}
         for domain in self.rewards.keys():
             self.running[domain] = RunningMoments()
-        if self.shared_storage is not None:
-            self.shared_storage.set("running_init_job", "empty")
-
-    def register(self):
-        if self.shared_storage is None:
-            return
-        with redis_lock(self.shared_storage, "tenant_list"):
-            self.shared_storage.lpush("tenant_list", self.name)
-
-    def wait_init(self):
-        current_running = self.shared_storage.get("running_init_job")
-        while current_running != self.name:
-            print(f"=== Wait Init: current is {current_running} != {self.name}")
-            time.sleep(self.check_interval)
-            current_running = self.shared_storage.get("running_init_job")
-
-    def wait_gen(self):
-        current_running = self.shared_storage.get("running_gen_job")
-        while current_running != self.name:
-            print(f"### Wait Gen: current is {current_running} != {self.name}")
-            time.sleep(self.check_interval)
-            current_running = self.shared_storage.get("running_gen_job")
-
-    def wait_train(self):
-        current_running = self.shared_storage.get("running_train_job")
-        while current_running != self.name:
-            print(f"@@@ Wait Train: current is {current_running} != {self.name}")
-            time.sleep(self.check_interval)
-            current_running = self.shared_storage.get("running_train_job")
 
     @torch.no_grad()
     def run(self):

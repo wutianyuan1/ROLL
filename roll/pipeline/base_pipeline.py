@@ -1,9 +1,13 @@
 import os
+import time
+from contextlib import contextmanager
 from concurrent import futures
-from typing import List
+from typing import List, Optional, Tuple
+from collections import Counter
 
 from codetiming import Timer
 from transformers import set_seed
+from redis import StrictRedis
 
 from roll.distributed.executor.model_update_group import ModelUpdateGroup
 from roll.distributed.scheduler.protocol import DataProto
@@ -18,9 +22,58 @@ from roll.utils.worker_state import WorkerState
 logger = get_logger()
 
 
-class BasePipeline:
+def get_job_name(shared_storage: Optional[StrictRedis]) -> Tuple[str, int]:
+    '''Returns the job_name (str) and job_id (int)'''
+    if shared_storage is not None:
+        shared_storage.setnx("job_id", 0)
+        job_id = shared_storage.incr("job_id", 1)
+        job_name = "job" + str(job_id)
+    else:
+        job_name = os.environ.get("JOB_NAME", "defaultjob")
+        job_id = 0
+    return job_name, job_id
+
+
+class BasePipelineMeta(type):
+    def __call__(cls, *args, **kwargs):
+        obj = cls.__new__(cls)
+        if hasattr(obj, '__pre_init__'):
+            # Executed before __init__, right after object creation
+            obj.__pre_init__()
+        obj.__init__(*args, **kwargs)
+        if hasattr(obj, '__post_init__'):
+            # Executed after __init__
+            obj.__post_init__()
+        return obj
+
+
+class BasePipeline(metaclass=BasePipelineMeta):
     model_update_groups: List[ModelUpdateGroup] = []
     checkpoint_clusters: List = []
+
+    def __pre_init__(self):
+        self.master_addr = os.environ.get("MASTER_ADDR", "localhost")
+        self.scheduler_port = int(os.environ.get("SCHEDULER_PORT", 9969))
+        self.check_interval = 0.2
+        self.step_counter = Counter()
+        try:
+            self.shared_storage = StrictRedis(
+                host=self.master_addr,
+                port=self.scheduler_port,
+                db=0,
+                decode_responses=True
+            )
+            self.shared_storage.set("test", "1")
+        except:
+            self.shared_storage = None
+        self.job_name, self.job_id = get_job_name(self.shared_storage)
+        print(f"=== Job created: <Name={self.job_name}, JobID={self.job_id}>")
+        if self.shared_storage is not None:
+            # (1) set job status to 'created' and notify the scheduler via redis pubsub
+            self.set_key(f"{self.job_name}:status", "created", nx=True)
+            self.shared_storage.publish("tenant_events", f"{self.job_name}:created")
+            # (2) wait until the scheduler changes the status and wakes it up.
+            self.wait_key(f"{self.job_name}:status", "initializing")
 
     def __init__(self, pipeline_config):
         set_seed(seed=pipeline_config.seed)
@@ -50,6 +103,53 @@ class BasePipeline:
                     self.tracker.log(values=metrics, step=metrics["system/step"])
 
             self.resume_futures.append(self.executor.submit(resume_metrics))
+
+    def __post_init__(self):
+        if self.shared_storage is not None:
+            # Notify the scheduler that the resources used for initialization can be released
+            gpu_list_str = ",".join([str(i) for i in range(self.resource_manager.num_gpus)])
+            self.shared_storage.publish("tenant_events", f"{self.job_name}:init:release_gpu[{gpu_list_str}]")
+            # Publish that the current job's initialization is finished
+            self.shared_storage.publish("tenant_events", f"{self.job_name}:init:done")
+            # After initialization, change itself's status to 'running'
+            self.set_key(f"{self.job_name}:status", "running")
+
+    def wait_key(self, key: str, expected: str):
+        """Wait until a the value corresponds to key in redis contains `expected`"""
+        while True:
+            resp = self.shared_storage.get(key)
+            if resp is not None and expected in resp:
+                break
+            time.sleep(self.check_interval)
+        return resp
+
+    def set_key(self, key: str, value: str, nx=False):
+        self.shared_storage.set(key, value, nx=nx)
+
+    @contextmanager
+    def scheduler_section(self, section_name: str):
+        """
+        A section for scheduler. When enters it, we should wait
+        for a specific scheduler_key until its value contains
+        expected_value, then give the control to the subsequent block.
+        """
+        try:
+            if self.shared_storage is not None:
+                # Safety: If status does not exist, set status to pending before taking actions
+                self.set_key(f"{self.job_name}:{section_name}:status", "pending", nx=True)
+                # Wait until the expected value occurs
+                self.wait_key(f"{self.job_name}:{section_name}:status", "running")
+                print(f"Entered context: {section_name} is ready to run now!")
+            # Give the control to `with` block
+            yield self.shared_storage
+        finally:
+            # Reset status to pending after the section finished
+            self.set_key(f"{self.job_name}:{section_name}:status", "pending")
+            # Notify the scheduler current section is finished.
+            self.shared_storage.publish("tenant_events", f"{self.job_name}:{section_name}:done[{self.step_counter[section_name]}]")
+            self.step_counter[section_name] += 1
+            print(f"Exited context: {section_name}, finished steps = {self.step_counter[section_name]}")
+
 
     def run(self):
         pass

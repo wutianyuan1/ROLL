@@ -29,12 +29,13 @@ class Cluster:
 
     def __init__(
         self,
+        job_name,
         name,
         worker_cls: Union[RemoteFunctionNoArgs[Worker], Type[Worker], str],
         resource_manager: ResourceManager,
         worker_config: WorkerConfig,
     ):
-
+        self.job_name = job_name
         self.cluster_name = name
         if isinstance(worker_cls, str):
             worker_cls = safe_import_class(worker_cls)
@@ -106,6 +107,10 @@ class Cluster:
                 "LOCAL_RANK": str(0),
                 "CLUSTER_NAME": self.cluster_name,
                 "WORKER_NAME": worker_name,
+                "JOB_NAME": self.job_name,
+                "SCHEDULER_PORT": os.environ.get("SCHEDULER_PORT", "9969"),
+                "VLLM_USE_V1": os.environ.get("VLLM_USE_V1", "1"),
+                "GPUS_PER_NODE": str(self.resource_manager.gpu_per_node)
             }
 
             if rank != 0:
