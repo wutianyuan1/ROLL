@@ -20,10 +20,6 @@ class EventType(enum.Enum):
         return name_map.get(event_type, cls.UNKNOWN)
 
 
-class ExecuteEventType(enum.Enum):
-    STATUS = 'status'
-
-
 class EventLevel(enum.Enum):
     WORKER = 'worker'
     PHASE = 'phase'

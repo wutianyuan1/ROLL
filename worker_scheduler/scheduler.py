@@ -6,7 +6,7 @@ import threading
 from copy import deepcopy
 from typing import Callable, List, Optional
 from resource_manager import ResourceManager
-from event import Event, EventParser, EventType, EventLevel, Phase, ExecuteEventType 
+from event import Event, EventParser, EventType, EventLevel, Phase 
 from router import EventRouter
 
 
@@ -27,7 +27,7 @@ class FCFSPolicy:
                 resource_manager.update_phase(event_to_run.job_name, Phase.INIT)
                 resource_manager.allocate_all(event_to_run.job_name)
                 event_queue.pop(0)
-                return [Event(event_to_run.job_name, ExecuteEventType.STATUS, value='initializing')]
+                return [Event(event_to_run.job_name, EventType.STATUS, value='initializing')]
             else:
                 return None
         elif event_to_run.phase == Phase.GENERATE:
@@ -38,7 +38,7 @@ class FCFSPolicy:
                 events_to_execute = []
                 events_to_execute.append(
                     Event(event_to_run.job_name,
-                        ExecuteEventType.STATUS,
+                        EventType.STATUS,
                         phase=Phase.GENERATE,
                         value='running'
                     )
@@ -47,7 +47,7 @@ class FCFSPolicy:
                     resource_manager.allocate_worker(event_to_run.job_name, 1)
                     events_to_execute.append(
                         Event(event_to_run.job_name,
-                            ExecuteEventType.STATUS,
+                            EventType.STATUS,
                             phase=Phase.GENERATE,
                             worker_id=str(i),
                             value='running'
@@ -59,13 +59,13 @@ class FCFSPolicy:
         elif event_to_run.phase == Phase.TRAIN:
             if len(resource_manager.available_devices) >= 4:
                 event_queue.pop(0)
-                return [Event(event_to_run.job_name, ExecuteEventType.STATUS, phase=Phase.TRAIN, value='running')]
+                return [Event(event_to_run.job_name, EventType.STATUS, phase=Phase.TRAIN, value='running')]
             else:
                 return None
         elif event_to_run.phase == Phase.UPDATE:
             if len(resource_manager.available_devices) >= 4:
                 event_queue.pop(0)
-                return [Event(event_to_run.job_name, ExecuteEventType.STATUS, phase=Phase.UPDATE, value='running')]
+                return [Event(event_to_run.job_name, EventType.STATUS, phase=Phase.UPDATE, value='running')]
             else:
                 return None
         else:
