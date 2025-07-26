@@ -1,6 +1,7 @@
 import logging
 import os
 import socket
+import redis
 from concurrent import futures
 from dataclasses import dataclass
 from typing import Dict
@@ -68,12 +69,23 @@ class Worker:
             dp_size=self.world_size,
         )
 
-        self.shared_storage = SharedStorage.options(
+        self.ray_shared_storage = SharedStorage.options(
             name=STORAGE_NAME, get_if_exists=True, namespace=RAY_NAMESPACE
         ).remote()
-        self.shared_storage.put.remote(
+        self.ray_shared_storage.put.remote(
             self.cluster_name, {"MASTER_ADDR": self.master_addr, "MASTER_PORT": self.master_port}
         )
+        try:
+            self.shared_storage = redis.StrictRedis(
+                host=os.environ.get("MASTER_ADDR", "localhost"),
+                port=int(os.environ.get("SCHEDULER_PORT", "9969")),
+                db=0
+            )
+            self.shared_storage.set("test", "1")
+        except:
+            print("*** Scheduler not found, migration is not functional.")
+            self.shared_storage = None
+        self.job_name = os.environ.get("JOB_NAME", "default")
         self.thread_executor: futures.ThreadPoolExecutor = futures.ThreadPoolExecutor(max_workers=5)
         self._logger = None
 

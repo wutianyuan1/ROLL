@@ -111,17 +111,7 @@ class VllmStrategy(InferenceStrategy):
             master_addr=self.worker.master_addr,
             master_port=self.worker.master_port,
         )
-        try:
-            self.shared_storage = redis.StrictRedis(
-                host=os.environ.get("MASTER_ADDR", "localhost"),
-                port=int(os.environ.get("SCHEDULER_PORT", "9969")),
-                db=0,
-                decode_responses=True
-            )
-            self.shared_storage.set("test", "1")
-        except:
-            print("*** Scheduler not found, migration is not functional.")
-            self.shared_storage = None
+        self.shared_storage = self.worker.shared_storage
 
     def op_compute_log_probs(self, logits: torch.Tensor, input_ids: torch.Tensor, attention_mask: torch.Tensor):
         """
@@ -197,7 +187,7 @@ class VllmStrategy(InferenceStrategy):
             for resp_id, resp in resps:
                 assert len(resp.outputs[0].token_ids) == len(resp.outputs[0].token_latencies)
             resp_start_idx = self.req_id_2_resp_start_idx[origin_req_id]
-            keys = [key for key in self.shared_storage.scan_iter(match=f"finished_token_ids_{origin_req_id}_*")]
+            keys = [key.decode() for key in self.shared_storage.scan_iter(match=f"finished_token_ids_{origin_req_id}_*")]
             # print(f"=== origin_req_id={origin_req_id}, cached responses: {len(keys)}, finished responses at this step: {len(resps)}, num_seqs: {origin_req_id_2_num_seqs[origin_req_id]}")
             assert len(keys) + len(resps) <= origin_req_id_2_num_seqs[origin_req_id], f"Cached responses ({len(keys)}) + finished responses ({len(resps)}) exceed num_seqs ({origin_req_id_2_num_seqs[origin_req_id]}) for request {origin_req_id}."
             if len(resps) + len(keys) == origin_req_id_2_num_seqs[origin_req_id]:
@@ -331,11 +321,7 @@ class VllmStrategy(InferenceStrategy):
             request_complete_callback(data=output_data)
         assert len(normal_req_ids_set) == 0
 
-    def start_server(self, data: DataProto, request_complete_callback, offload_manager):
-        # Enter the offload manager, GPU memory will be allocated after here.
-        offload_manager.__enter__()
-        self.ready = True
-
+    def start_server(self, data: DataProto, request_complete_callback):
         while True:
             while not self.command_queue.empty():
                 command, batch = self.command_queue.get_nowait()

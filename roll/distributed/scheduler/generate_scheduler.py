@@ -340,9 +340,10 @@ class GenerateScheduler:
 @ray.remote(concurrency_groups={"single_thread": 1, "multi_thread": 256})
 class DynamicSamplingScheduler:
 
-    def __init__(self, pipeline_config=None):
+    def __init__(self, pipeline_config=None, job_name='default'):
         self.pipeline_config = pipeline_config
         set_seed(seed=pipeline_config.seed)
+        self.job_name = job_name
         self.progress_bar: Optional[tqdm] = None
         self.request_counter = None
         self.dp_fetch_count = {}

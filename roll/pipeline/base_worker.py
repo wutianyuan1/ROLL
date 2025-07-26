@@ -169,22 +169,26 @@ class ActorWorker(Worker):
         strategy.ready = False
 
         # Block start_server execution here, wait for a running signal from the shared storage
-        if strategy.shared_storage is not None:
-            job_name = os.environ.get("JOB_NAME", "default")
-            status_key = f"{job_name}:generate:{self.rank}:status"
+        if self.shared_storage is not None:
+            status_key = f"{self.job_name}:generate:{self.rank}:status"
             # Safety: if the status does not exist, initialize it to "pending"
-            strategy.shared_storage.setnx(status_key, "pending")
+            self.shared_storage.setnx(status_key, "pending")
             while True:
-                status_str = strategy.shared_storage.get(status_key)
+                status_str = self.shared_storage.get(status_key)
                 if status_str is None:
                     continue
+                status_str = status_str.decode()
                 if status_str == 'running':
                     break
                 elif status_str == 'terminate':
-                    print(f"[{job_name}:generate:{self.rank}] terminated (not started)")
+                    print(f"[{self.job_name}:generate:{self.rank}] terminated (not started)")
                     return
                 time.sleep(0.2)
-        strategy.start_server(offload_manager=self.offload_manager, **start_server_args)
+
+        # Enter the offload manager, GPU memory will be allocated after here.
+        self.offload_manager.__enter__()
+        strategy.ready = True
+        strategy.start_server(**start_server_args)
 
     @register(dispatch_mode=Dispatch.ONE_TO_ALL_ONE)
     @torch.no_grad()
@@ -233,10 +237,9 @@ class ActorWorker(Worker):
 
         # There may be some pending workers that are still waiting for running signal,
         # we should set status to "terminate" to force them exiting their wait loop.
-        job_name = os.environ.get("JOB_NAME", "default")
-        if self.strategy.shared_storage is not None:
-            status_key = f"{job_name}:generate:{self.rank}:status"
-            self.strategy.shared_storage.set(status_key, "terminate")
+        if self.shared_storage is not None:
+            status_key = f"{self.job_name}:generate:{self.rank}:status"
+            self.shared_storage.set(status_key, "terminate")
 
         # Then, join thread server is save (no infinite waits)
         self.thread_server.join()
@@ -251,15 +254,15 @@ class ActorWorker(Worker):
         self.stop_server_metrics = DataProto(meta_info={"metrics": self.server_metrics})
 
         # Notify the scheduler
-        if self.strategy.shared_storage is not None:
+        if self.shared_storage is not None:
             # Reset worker's status to 'pending'
-            status_key = f"{job_name}:generate:{self.rank}:status"
-            self.strategy.shared_storage.set(status_key, "pending")
+            status_key = f"{self.job_name}:generate:{self.rank}:status"
+            self.shared_storage.set(status_key, "pending")
             # Release GPUs acquired by this worker
             device_info = self.get_devices_info()
             gpus_per_node = int(os.environ.get("GPUS_PER_NODE", 1))
             global_gpu_ids_str = ",".join([str(i['gpu_rank'] + i['node_rank'] * gpus_per_node) for i in device_info])
-            self.strategy.shared_storage.publish("tenant_events", f"{job_name}:generate:{self.rank}:release_gpu[{global_gpu_ids_str}]")
+            self.shared_storage.publish("tenant_events", f"{self.job_name}:generate:{self.rank}:release_gpu[{global_gpu_ids_str}]")
         return self.stop_server_metrics
 
     def get_stats(self) -> EngineStats:

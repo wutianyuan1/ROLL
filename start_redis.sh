@@ -1,7 +1,7 @@
 if ! command -v redis-server &> /dev/null
 then
     echo "'redis-server' command not found. Attempting to install..."
-    sudo apt-get install -y redis-server
+    apt-get install -y redis-server
 else
     echo "redis-server is already installed."
 fi
@@ -14,4 +14,4 @@ else
     echo "Python 'redis' library is already installed."
 fi
 
-redis-server --bind $MASTER_ADDR --port 9970 --save "" &
+redis-server --bind $MASTER_ADDR --port 9969 --save "" &

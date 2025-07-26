@@ -188,7 +188,7 @@ class GenOnlyPipeline(BasePipeline):
                     node_id=ray.get_runtime_context().get_node_id(),
                     soft=False,
                 )
-            ).remote(pipeline_config=self.pipeline_config)
+            ).remote(pipeline_config=self.pipeline_config, job_name=self.job_name)
             ray.get(
                 generate_scheduler.set_scheduler.remote(
                     actor_cluster=self.actor_infer,
