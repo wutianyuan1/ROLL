@@ -340,9 +340,10 @@ class GenerateScheduler:
 @ray.remote(concurrency_groups={"single_thread": 1, "multi_thread": 256})
 class DynamicSamplingScheduler:
 
-    def __init__(self, pipeline_config=None):
+    def __init__(self, pipeline_config=None, job_name='default'):
         self.pipeline_config = pipeline_config
         set_seed(seed=pipeline_config.seed)
+        self.job_name = job_name
         self.progress_bar: Optional[tqdm] = None
         self.request_counter = None
         self.dp_fetch_count = {}
@@ -402,7 +403,7 @@ class DynamicSamplingScheduler:
             )
             self.shared_storage.set("test", "1")
         except:
-            print("**** Main: redis not found, migration is not functional!!!")
+            print("**** Main: redis not found, migration is not functional.")
             self.shared_storage = None
 
     def set_scheduler(
@@ -519,7 +520,7 @@ class DynamicSamplingScheduler:
             # For non-skip iterations, we update ready_workers based on the new worker_status.
             if len(worker_status) != 0:
                 # print(f"=== alive check: {worker_status}")
-                ready_workers = [i for i in range(len(worker_status)) if worker_status[i] == 'ready']
+                ready_workers = [i for i in range(len(worker_status)) if worker_status[i] == 'running']
             if len(ready_workers) == 0:
                 print(f"*** No available workers, current status: {worker_status}")
                 time.sleep(1)

@@ -155,6 +155,7 @@ class GenOnlyPipeline(BasePipeline):
 
 
         self.actor_infer: Any = Cluster(
+            job_name=self.job_name,
             name=self.pipeline_config.actor_infer.name,
             worker_cls=self.pipeline_config.actor_infer.worker_cls,
             resource_manager=self.resource_manager,
@@ -162,6 +163,7 @@ class GenOnlyPipeline(BasePipeline):
         )
         self.rewards: Dict[str, Any] = {
             key: Cluster(
+                job_name=self.job_name,
                 name=f"reward-{key}",
                 worker_cls=worker_config.worker_cls,
                 resource_manager=self.resource_manager,
@@ -186,7 +188,7 @@ class GenOnlyPipeline(BasePipeline):
                     node_id=ray.get_runtime_context().get_node_id(),
                     soft=False,
                 )
-            ).remote(pipeline_config=self.pipeline_config)
+            ).remote(pipeline_config=self.pipeline_config, job_name=self.job_name)
             ray.get(
                 generate_scheduler.set_scheduler.remote(
                     actor_cluster=self.actor_infer,
@@ -243,9 +245,9 @@ class GenOnlyPipeline(BasePipeline):
                 batch.meta_info = {"global_step": global_step}
 
                 # 要按domain group by生成对应的batch
-                with actor_infer_timer, actor_infer_response_timer, Timer(
-                    name="step_generate", logger=None
-                ) as step_generate_timer:
+                with self.scheduler_section("generate"),\
+                     actor_infer_timer, actor_infer_response_timer,\
+                     Timer(name="step_generate", logger=None) as step_generate_timer:
                     domain_batches = {}
                     batch.meta_info["generation_config"] = self.actor_infer.worker_config.generating_args.to_dict()
                     self.actor_infer.start_server(data=DataProto(meta_info=batch.meta_info))
@@ -279,8 +281,13 @@ class GenOnlyPipeline(BasePipeline):
                 for domain, scheduler in self.generate_schedulers.items():
                     self.state.kv[f"scheduler_state_{domain}"] = ray.get(scheduler.get_scheduler_state.remote())
 
-
                 self.tracker.log(values=metrics, step=global_step)
+
+                with self.scheduler_section("train"):
+                    pass
+
+                with self.scheduler_section("update"):
+                    pass
 
                 if global_step % self.pipeline_config.logging_steps == 0:
                     if int(os.environ.get("RAY_PROFILING", "0")):

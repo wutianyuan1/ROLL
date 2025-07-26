@@ -111,16 +111,7 @@ class VllmStrategy(InferenceStrategy):
             master_addr=self.worker.master_addr,
             master_port=self.worker.master_port,
         )
-        try:
-            self.shared_storage = redis.StrictRedis(
-                host=os.environ.get("MASTER_ADDR", "localhost"),
-                port=int(os.environ.get("SCHEDULER_PORT", "9969")),
-                db=0
-            )
-            self.shared_storage.set("test", "1")
-        except:
-            print("*** Scheduler not found, migration is not functional!!!")
-            self.shared_storage = None
+        self.shared_storage = self.worker.shared_storage
 
     def op_compute_log_probs(self, logits: torch.Tensor, input_ids: torch.Tensor, attention_mask: torch.Tensor):
         """
@@ -330,25 +321,7 @@ class VllmStrategy(InferenceStrategy):
             request_complete_callback(data=output_data)
         assert len(normal_req_ids_set) == 0
 
-    def start_server(self, data: DataProto, request_complete_callback, offload_manager):
-        # collective.barrier(group_name=self.group_name)
-        self.running = True
-        self.ready = False
-
-        # Block start_server execution here, wait for a running signal from the shared storage
-        if self.shared_storage is not None:
-            while True:
-                status_bytes = self.shared_storage.get(self.worker.worker_name + "_status")
-                if status_bytes is not None:
-                    status_str = status_bytes.decode()
-                    if status_str == 'running':
-                        print("=== Got running signal!")
-                        break
-                time.sleep(0.1)
-        # Enter the offload manager, GPU memory will be allocated after here.
-        offload_manager.__enter__()
-        self.ready = True
-
+    def start_server(self, data: DataProto, request_complete_callback):
         while True:
             while not self.command_queue.empty():
                 command, batch = self.command_queue.get_nowait()
