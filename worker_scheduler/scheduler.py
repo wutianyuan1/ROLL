@@ -132,8 +132,6 @@ class Scheduler:
                     self.ready_queue.append(ready_event)
                 else:
                     assert False, f"Unexpected finish event: {event}"
-            elif event.level == EventLevel.JOB:
-                self.resource_manager.cleanup_by_name(event.job_name)
             else:
                 assert False, f"Unexpected event level, event={event}"
 
