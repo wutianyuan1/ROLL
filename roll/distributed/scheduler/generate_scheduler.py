@@ -485,8 +485,8 @@ class DynamicSamplingScheduler:
     def clear_token_ids_from_shared_storage(self):
         # For launching migration for unfinished responses: token_ids_*, token_latencies_*
         # For caching finished responses: finished_token_ids_*, finished_token_latencies_*
-        keys = self.shared_storage.keys("token_ids_*") + self.shared_storage.keys("finished_token_ids_*")\
-                    + self.shared_storage.keys("token_latencies_*") + self.shared_storage.keys("finished_token_latencies_*")
+        keys = self.shared_storage.keys(f"{self.job_name}:token_ids_*") + self.shared_storage.keys(f"{self.job_name}:finished_token_ids_*")\
+                    + self.shared_storage.keys(f"{self.job_name}:token_latencies_*") + self.shared_storage.keys(f"{self.job_name}:finished_token_latencies_*")
         pipeline = self.shared_storage.pipeline()
         for key in keys:
             pipeline.delete(key)
@@ -536,7 +536,7 @@ class DynamicSamplingScheduler:
                 # Before migration, first clean all old keys.
                 self.clear_token_ids_from_shared_storage()
                 pubsub_channel = self.shared_storage.pubsub()
-                pubsub_channel.subscribe("migrate_progress")
+                pubsub_channel.subscribe(f"{self.job_name}:migrate_progress")
                 # First, ask the source-side workers to put the current text to shared redis
                 # and abort the running requests.
                 for (src_worker, dst_worker), req_ids in migrate_src_dst.items():
@@ -570,7 +570,7 @@ class DynamicSamplingScheduler:
                     keys_scanned = 0
                     # Before scan token_ids of responses to migrate, scan their token_latencies.
                     resp_2_token_latencies = {}
-                    for key in self.shared_storage.scan_iter(match=f'token_latencies_{src_rank}_{dst_rank}*'):
+                    for key in self.shared_storage.scan_iter(match=f'{self.job_name}:token_latencies_{src_rank}_{dst_rank}*'):
                         key = key.decode()
                         items = key.split("_")
                         req_id, resp_id = int(items[4]), int(items[5])
@@ -580,7 +580,7 @@ class DynamicSamplingScheduler:
                         token_latencies_list = token_latencies_arr.tolist()
                         resp_2_token_latencies[f"{req_id}_{resp_id}"] = token_latencies_list
                     # Scan token_ids of responses to migrate.
-                    for key in self.shared_storage.scan_iter(match=f'token_ids_{src_rank}_{dst_rank}*'):
+                    for key in self.shared_storage.scan_iter(match=f'{self.job_name}:token_ids_{src_rank}_{dst_rank}*'):
                         key = key.decode()
                         items = key.split("_")
                         req_id, resp_id = int(items[4]), int(items[5])

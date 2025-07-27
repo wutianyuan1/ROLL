@@ -187,7 +187,7 @@ class VllmStrategy(InferenceStrategy):
             for resp_id, resp in resps:
                 assert len(resp.outputs[0].token_ids) == len(resp.outputs[0].token_latencies)
             resp_start_idx = self.req_id_2_resp_start_idx[origin_req_id]
-            keys = [key.decode() for key in self.shared_storage.scan_iter(match=f"finished_token_ids_{origin_req_id}_*")]
+            keys = [key.decode() for key in self.shared_storage.scan_iter(match=f"{self.worker.job_name}:finished_token_ids_{origin_req_id}_*")]
             # print(f"=== origin_req_id={origin_req_id}, cached responses: {len(keys)}, finished responses at this step: {len(resps)}, num_seqs: {origin_req_id_2_num_seqs[origin_req_id]}")
             assert len(keys) + len(resps) <= origin_req_id_2_num_seqs[origin_req_id], f"Cached responses ({len(keys)}) + finished responses ({len(resps)}) exceed num_seqs ({origin_req_id_2_num_seqs[origin_req_id]}) for request {origin_req_id}."
             if len(resps) + len(keys) == origin_req_id_2_num_seqs[origin_req_id]:
@@ -210,7 +210,7 @@ class VllmStrategy(InferenceStrategy):
                     assert token_ids_list[0] == resp_start_idx, f"Separation index {token_ids_list[0]} does not match expected {resp_start_idx} for request {origin_req_id}."
                     output_token_ids.append(tuple(token_ids_list[resp_start_idx + 1:]))
                     # For token_latencies
-                    token_latencies_bytes = self.shared_storage.get(f"finished_token_latencies_{origin_req_id}_{resp_id}")
+                    token_latencies_bytes = self.shared_storage.get(f"{self.worker.job_name}:finished_token_latencies_{origin_req_id}_{resp_id}")
                     token_latencies_arr = array.array("f")
                     token_latencies_arr.frombytes(token_latencies_bytes)
                     token_latencies_list = token_latencies_arr.tolist()
@@ -264,7 +264,7 @@ class VllmStrategy(InferenceStrategy):
                     # For token_ids
                     all_token_ids = [resp_start_idx] + list(resp.prompt_token_ids) + list(resp.outputs[0].token_ids)
                     serialized_tokens = array.array('I', all_token_ids)
-                    shard_storage_pipeline.set(f"finished_token_ids_{origin_req_id}_{resp_id}", serialized_tokens.tobytes())
+                    shard_storage_pipeline.set(f"{self.worker.job_name}:finished_token_ids_{origin_req_id}_{resp_id}", serialized_tokens.tobytes())
                     # For token_latencies
                     # To set token latencies, we need to concatenate latencies of tokens generated previously and now.
                     # To get the re-prefill overhead, set the first element to the length of previously generated tokens.
@@ -273,7 +273,7 @@ class VllmStrategy(InferenceStrategy):
                     # [1: sep_idx + 1] are latencies of previously generated tokens, [sep_idx + 1:] are latencies of just generated tokens.
                     all_token_latencies = [float(len(previous_token_latencies))] + previous_token_latencies + list(resp.outputs[0].token_latencies)
                     serialized_latencies = array.array('f', all_token_latencies)
-                    shard_storage_pipeline.set(f"finished_token_latencies_{origin_req_id}_{resp_id}", serialized_latencies.tobytes())
+                    shard_storage_pipeline.set(f"{self.worker.job_name}:finished_token_latencies_{origin_req_id}_{resp_id}", serialized_latencies.tobytes())
                     # with open("./metrics.log", 'a') as f:
                     #     f.write(f"{origin_req_id}_{resp_id} {' '.join([f'{v:.3f}' for v in all_token_latencies])}\n")
         shard_storage_pipeline.execute()
@@ -390,21 +390,21 @@ class VllmStrategy(InferenceStrategy):
                                 serialized_tokens = array.array('I', all_token_ids)
                                 if output_response.finish_reason is None:
                                     # For token_ids
-                                    migrate_pipeline.set(f"token_ids_{my_rank}_{dst_rank}_{req_output.request_id}_{resp_id}", serialized_tokens.tobytes())
+                                    migrate_pipeline.set(f"{self.worker.job_name}:token_ids_{my_rank}_{dst_rank}_{req_output.request_id}_{resp_id}", serialized_tokens.tobytes())
                                     # For token_latencies
                                     serialized_latencies = array.array('f', list(output_response.token_latencies))
-                                    migrate_pipeline.set(f"token_latencies_{my_rank}_{dst_rank}_{req_output.request_id}_{resp_id}", serialized_latencies.tobytes())
+                                    migrate_pipeline.set(f"{self.worker.job_name}:token_latencies_{my_rank}_{dst_rank}_{req_output.request_id}_{resp_id}", serialized_latencies.tobytes())
                                 else:
                                     # For token_ids
                                     # Cache finished responses to merge with migrated responses in the future to finish this request.
-                                    migrate_pipeline.set(f"finished_token_ids_{req_output.request_id}_{resp_id}", serialized_tokens.tobytes())
+                                    migrate_pipeline.set(f"{self.worker.job_name}:finished_token_ids_{req_output.request_id}_{resp_id}", serialized_tokens.tobytes())
                                     # For token_latencies
                                     # For finished responses, we need to use the first element to mark the number of previously generated tokens.
                                     # all_token_latencies: [0] is the separation index of previously generated tokens and just generated tokens,
                                     # [1: sep_idx + 1] are latencies of previously generated tokens, [sep_idx + 1:] are latencies of just generated tokens.
                                     all_token_latencies = [float(len(output_response.token_latencies))] + list(output_response.token_latencies)
                                     serialized_latencies = array.array('f', all_token_latencies)
-                                    migrate_pipeline.set(f"finished_token_latencies_{req_output.request_id}_{resp_id}", serialized_latencies.tobytes())
+                                    migrate_pipeline.set(f"{self.worker.job_name}:finished_token_latencies_{req_output.request_id}_{resp_id}", serialized_latencies.tobytes())
                             num_finished_resps = len([resp for resp in req_output.outputs if resp.finish_reason is not None])
                             num_resps_to_migrate[req_output.request_id] = len(req_output.outputs) - num_finished_resps
                             print(f"=== migrate request: {req_output.request_id}, finished responses: {num_finished_resps}, responses to migrate: {num_resps_to_migrate[req_output.request_id]}")
@@ -412,7 +412,7 @@ class VllmStrategy(InferenceStrategy):
                             self.model.abort_request(request_id=req_output.request_id)
                         print(f"=== migrate {sum(num_resps_to_migrate.values())} responses: {num_resps_to_migrate}")
                     migrate_pipeline.execute()
-                    self.shared_storage.publish("migrate_progress", f"done_{my_rank}_{dst_rank}")
+                    self.shared_storage.publish(f"{self.worker.job_name}:migrate_progress", f"done_{my_rank}_{dst_rank}")
 
                 elif command == GenerateRequestType.ABORT:
                     request_id = batch.meta_info["request_id"]
