@@ -32,8 +32,7 @@ from roll.utils.functionals import (
 from roll.utils.logging import get_logger
 from roll.utils.multi_thread_utils import ThreadSafeDict
 from roll.third_party.vllm.vllm_utils import EngineStats
-from roll.distributed.scheduler.migration_scheduler import MigrationSchedulerBase, NaiveMigrationScheduler
-from roll.distributed.scheduler.static_migration import StaticAggMigrationSchedulerTest
+from roll.distributed.scheduler.migration_scheduler import MigrationSchedulerBase, StaticAggMigrationScheduler
 
 logger = get_logger()
 
@@ -507,7 +506,7 @@ class DynamicSamplingScheduler:
         num_return_sequences = self.generation_config["num_return_sequences"]
         request_id_2_request = {}
         migration_scheduler: MigrationSchedulerBase =\
-            StaticAggMigrationSchedulerTest([0], 128)
+            StaticAggMigrationScheduler([0], 128)
         get_worker_stat_fns = [self.actor_cluster.workers[i].get_stats for i in range(len(self.actor_cluster.workers))]
         ready_workers = []
         while True:
