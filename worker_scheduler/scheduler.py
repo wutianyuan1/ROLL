@@ -3,9 +3,10 @@ import redis
 import time
 import logging
 import threading
+import subprocess
 from copy import deepcopy
 from typing import Callable, List, Optional
-from resource_manager import ResourceManager
+from resource_manager import ResourceManager, JobStatus
 from event import Event, EventParser, EventType, EventLevel, Phase 
 from router import EventRouter
 
@@ -13,7 +14,32 @@ from router import EventRouter
 PolicyFuncType = Callable[[List[Event], ResourceManager], Optional[List[Event]]]
 
 
+def get_init_job_status(job_name: str, shared_storage: redis.StrictRedis) -> JobStatus:
+    # gpus per worker: default = 1
+    gpus_per_gen_worker = shared_storage.get(f'{job_name}:gpus_per_gen_worker')
+    gpus_per_gen_worker = int(gpus_per_gen_worker.decode()) if gpus_per_gen_worker is not None else 1
+    # max_train_gpus: default = 1
+    max_train_gpus = shared_storage.get(f'{job_name}:max_train_gpus')
+    max_train_gpus = int(max_train_gpus.decode()) if max_train_gpus is not None else 1
+    # max_gen_gpus: default = 1
+    max_gen_gpus = shared_storage.get(f'{job_name}:max_gen_gpus')
+    max_gen_gpus = int(max_gen_gpus.decode()) if max_gen_gpus is not None else 1
+    job_status = JobStatus(
+        job_name=job_name,
+        phase=Phase.INIT,
+        gpus_per_gen_worker=gpus_per_gen_worker,
+        max_gen_gpus=max_gen_gpus,
+        max_train_gpus=max_train_gpus,
+        allocated_gpus=[]
+    )
+    return job_status
+
+
 class FCFSPolicy:
+    def __init__(self, shared_storage: redis.StrictRedis, min_concurrency_ratio: float = 0.5):
+        self.min_concurrency_ratio = min_concurrency_ratio
+        self.shared_storage = shared_storage
+
     def __call__(self, event_queue: List[Event], resource_manager: ResourceManager) -> Optional[List[Event]]:
         if len(event_queue) == 0:
             return None
@@ -23,17 +49,19 @@ class FCFSPolicy:
         if event_to_run.level == EventLevel.JOB:
             # If there are enough resource to schedule an init now
             if len(resource_manager.available_devices) == resource_manager.cluster_size:
-                resource_manager.register_job(event_to_run.job_name)
-                resource_manager.update_phase(event_to_run.job_name, Phase.INIT)
+                resource_manager.register_job(
+                    get_init_job_status(event_to_run.job_name, self.shared_storage)
+                )
                 resource_manager.allocate_all(event_to_run.job_name)
                 event_queue.pop(0)
                 return [Event(event_to_run.job_name, EventType.STATUS, value='initializing')]
             else:
                 return None
         elif event_to_run.phase == Phase.GENERATE:
-            # HACK: simple implementation: just start this phase and run all 4 workers
             assert event_to_run.level == EventLevel.PHASE
-            if len(resource_manager.available_devices) >= 4:
+            job_status = resource_manager.job_mapping[event_to_run.job_name]
+            print(f"[Policy] available_devices: {resource_manager.available_devices}, {job_status.max_gen_gpus}, {self.min_concurrency_ratio}")
+            if len(resource_manager.available_devices) / job_status.max_gen_gpus >= self.min_concurrency_ratio:
                 event_queue.pop(0)
                 events_to_execute = []
                 events_to_execute.append(
@@ -43,8 +71,8 @@ class FCFSPolicy:
                         value='running'
                     )
                 )
-                for i in range(4):
-                    resource_manager.allocate_worker(event_to_run.job_name, 1)
+                for i in range(len(resource_manager.available_devices) // job_status.gpus_per_gen_worker):
+                    resource_manager.allocate_worker(event_to_run.job_name)
                     events_to_execute.append(
                         Event(event_to_run.job_name,
                             EventType.STATUS,
@@ -57,13 +85,16 @@ class FCFSPolicy:
             else:
                 return None
         elif event_to_run.phase == Phase.TRAIN:
-            if len(resource_manager.available_devices) >= 4:
+            job_status = resource_manager.job_mapping[event_to_run.job_name]
+            if len(resource_manager.available_devices) >= job_status.max_train_gpus:
                 event_queue.pop(0)
                 return [Event(event_to_run.job_name, EventType.STATUS, phase=Phase.TRAIN, value='running')]
             else:
                 return None
         elif event_to_run.phase == Phase.UPDATE:
-            if len(resource_manager.available_devices) >= 4:
+            job_status = resource_manager.job_mapping[event_to_run.job_name]
+            # TODO: fix gpu count here
+            if len(resource_manager.available_devices) >= job_status.max_train_gpus:
                 event_queue.pop(0)
                 return [Event(event_to_run.job_name, EventType.STATUS, phase=Phase.UPDATE, value='running')]
             else:
@@ -182,11 +213,26 @@ class Scheduler:
 
 
 if __name__ == '__main__':
+    master_addr = os.environ.get("MASTER_ADDR", "localhost")
+    scheduler_port = int(os.environ.get("SCHEDULER_PORT", "9969"))
+    redis_server_proc = subprocess.Popen(
+        f"redis-server --bind {master_addr} --port {scheduler_port} --save \"\"",
+        shell=True
+    )
     shared_storage = redis.StrictRedis(
-        host=os.environ.get("MASTER_ADDR", "localhost"),
-        port=int(os.environ.get("SCHEDULER_PORT", "9969")),
+        host=master_addr,
+        port=scheduler_port,
         db=0
     )
-    policy = FCFSPolicy()
+    # wait the redis ready
+    while True:
+        try:
+            shared_storage.set("test", 1)
+            break
+        except:
+            continue
+    print("[Scheduler] connected to redis.")
+    policy = FCFSPolicy(shared_storage=shared_storage, min_concurrency_ratio=1.0)
     scheduler = Scheduler(shared_storage, policy)
     scheduler.run()
+    redis_server_proc.terminate()

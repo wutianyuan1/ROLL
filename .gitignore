@@ -169,3 +169,5 @@ cython_debug/
 log
 # examples
 roll/multi_tenant/feijiu/
+experiments/figures/
+experiments/lunxi_logs

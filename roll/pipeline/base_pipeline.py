@@ -17,6 +17,7 @@ from roll.utils.functionals import reduce_metrics
 from roll.utils.logging import get_logger
 from roll.utils.tracking import create_tracker
 from roll.utils.worker_state import WorkerState
+from roll.configs.base_config import BaseConfig
 
 
 logger = get_logger()
@@ -37,9 +38,27 @@ def get_job_name(shared_storage: Optional[StrictRedis]) -> Tuple[str, int]:
 class BasePipelineMeta(type):
     def __call__(cls, *args, **kwargs):
         obj = cls.__new__(cls)
+        # Search through the passed-in arguments to find the config object
+        config_obj = None
+        for arg in args:
+            if isinstance(arg, BaseConfig):
+                config_obj = arg
+        for arg in kwargs.values():
+            if isinstance(arg, BaseConfig):
+                config_obj = arg
         if hasattr(obj, '__pre_init__'):
             # Executed before __init__, right after object creation
-            obj.__pre_init__()
+            if config_obj is not None:
+                num_gpus_per_gen_worker = config_obj.actor_infer.num_gpus_per_worker
+                max_gen_gpus = len(config_obj.actor_infer.device_mapping)
+                max_train_gpus = len(config_obj.actor_train.device_mapping)
+            else:
+                print("[BasePipelineMeta] cannot find config object")
+                num_gpus_per_gen_worker = 1
+                max_gen_gpus = 1
+                max_train_gpus = 1
+            print(f"[BasePipelineMeta] num_gpus_per_gen_worker={num_gpus_per_gen_worker}, max_gen_gpus={max_gen_gpus}, max_train_gpus={max_train_gpus}")
+            obj.__pre_init__(num_gpus_per_gen_worker, max_gen_gpus, max_train_gpus)
         obj.__init__(*args, **kwargs)
         if hasattr(obj, '__post_init__'):
             # Executed after __init__
@@ -51,7 +70,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
     model_update_groups: List[ModelUpdateGroup] = []
     checkpoint_clusters: List = []
 
-    def __pre_init__(self):
+    def __pre_init__(self,
+                     num_gpus_per_gen_worker: int = 1,
+                     max_gen_gpus: int = 1,
+                     max_train_gpus: int = 1):
         self.master_addr = os.environ.get("MASTER_ADDR", "localhost")
         self.scheduler_port = int(os.environ.get("SCHEDULER_PORT", 9969))
         self.check_interval = 0.2
@@ -72,7 +94,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
             # (1) set job status to 'created' and notify the scheduler via redis pubsub
             self.set_key(f"{self.job_name}:status", "created", nx=True)
             self.shared_storage.publish("tenant_events", f"{self.job_name}:created")
-            # (2) wait until the scheduler changes the status and wakes it up.
+            # (2) set gpus_per_gen_worker, max_gen_gpus, and max_train_gpus
+            self.set_key(f"{self.job_name}:gpus_per_gen_worker", num_gpus_per_gen_worker)
+            self.set_key(f"{self.job_name}:max_gen_gpus", max_gen_gpus)
+            self.set_key(f"{self.job_name}:max_train_gpus", max_train_gpus)
+            # (3) wait until the scheduler changes the status and wakes it up.
             self.wait_key(f"{self.job_name}:status", "initializing")
 
     def __init__(self, pipeline_config):

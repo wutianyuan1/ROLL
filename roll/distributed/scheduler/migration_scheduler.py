@@ -70,3 +70,67 @@ class NaiveMigrationScheduler(MigrationSchedulerBase):
             return {(0, 1): per_worker_reqs[0], (2, 1): per_worker_reqs[2], (3, 1): per_worker_reqs[3]}
         else:
             return {}
+
+
+class StaticAggMigrationScheduler(MigrationSchedulerBase):
+    CHECK_INTERVAL = 1
+
+    def __init__(self, dest_workers: List[int], max_batch_size: int):
+        super().__init__()
+        self.start_time = time.time()
+        self.last_check_time = self.start_time
+        self.migrated = False
+        self.dest_workers = dest_workers
+        self.batch_size = max_batch_size
+
+    def _aggregate_reqs(self, request_mapping: Dict[str, int]) -> Dict[int, List[str]]:
+        per_worker_reqs = {}
+        for req_id, worker_id in request_mapping.items():
+            if worker_id not in per_worker_reqs:
+                per_worker_reqs[worker_id] = [req_id]
+            else:
+                per_worker_reqs[worker_id].append(req_id)
+        return per_worker_reqs
+
+    def migrate(self, get_worker_stat_fns: List[Callable[[], EngineStats]], request_mapping: Dict[str, int]
+                )-> Dict[Tuple[int, int], List[str]]:
+        '''
+        static policy, assume we have several (e.g., 128) requests on N separate workers,
+        We want to migrate them to dest_workers once possible. Migration only happens once.
+        '''
+        current_time = time.time()
+        if current_time - self.last_check_time <= StaticAggMigrationScheduler.CHECK_INTERVAL:
+            print(f"==== scheduler: skip ({current_time - self.last_check_time})")
+            return {}
+        self.last_check_time = current_time
+
+        if current_time - self.start_time >= 5 and (not self.migrated):
+            worker_stats: List[EngineStats] = [ray.get(fn.remote()) for fn in get_worker_stat_fns]
+            engine_unfinished_reqs = [i.num_unfinished_reqs for i in worker_stats]
+            print(f"==== scheduler check: migrated={self.migrated}, since_start={current_time - self.start_time}, engine_unfinished_reqs={engine_unfinished_reqs}, request_mapping_len={len(request_mapping)}")
+            if sum(engine_unfinished_reqs) <= len(self.dest_workers) * self.batch_size:
+                per_worker_reqs = self._aggregate_reqs(request_mapping)
+                src_list = list(range(len(get_worker_stat_fns)))
+                for worker in self.dest_workers:
+                    assert worker in src_list
+                    src_list.remove(worker)
+                migration_plan = {}
+                for dest in self.dest_workers:
+                    avail = self.batch_size - len(per_worker_reqs[dest])
+                    while avail > 0 and len(src_list) != 0:
+                        src = src_list.pop()
+                        if len(per_worker_reqs[src]) <= avail:
+                            migration_plan[(src, dest)] = per_worker_reqs[src]
+                            avail -= len(per_worker_reqs[src])
+                        else:
+                            migration_plan[(src, dest)] = per_worker_reqs[src][:avail]
+                            per_worker_reqs[src] = per_worker_reqs[src][avail:]
+                            assert len(per_worker_reqs[src]) > 0
+                            avail = 0
+                            src_list.append(src)
+                self.migrated = True
+                return migration_plan
+            else:
+                return {}
+        else:
+            return {}

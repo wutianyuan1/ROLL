@@ -41,6 +41,7 @@ class ActorWorker(Worker):
         self.thread_server = None
         self.offload_manager = None
         self.stop_server_metrics = None
+        self.worker_start_time = None
 
     @register(dispatch_mode=Dispatch.ONE_TO_ALL)
     def initialize(self, pipeline_config):
@@ -187,6 +188,7 @@ class ActorWorker(Worker):
 
         # Enter the offload manager, GPU memory will be allocated after here.
         self.offload_manager.__enter__()
+        self.worker_start_time = time.time()
         strategy.ready = True
         strategy.start_server(**start_server_args)
 
@@ -262,6 +264,7 @@ class ActorWorker(Worker):
             device_info = self.get_devices_info()
             gpus_per_node = int(os.environ.get("GPUS_PER_NODE", 1))
             global_gpu_ids_str = ",".join([str(i['gpu_rank'] + i['node_rank'] * gpus_per_node) for i in device_info])
+            self.shared_storage.set(f"{self.job_name}:generate:{self.rank}:active_time", time.time() - self.worker_start_time)
             self.shared_storage.publish("tenant_events", f"{self.job_name}:generate:{self.rank}:release_gpu[{global_gpu_ids_str}]")
         return self.stop_server_metrics
 
