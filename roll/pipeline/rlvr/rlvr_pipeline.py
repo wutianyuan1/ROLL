@@ -348,6 +348,7 @@ class RLVRPipeline(BasePipeline):
                         metrics_mgr.add_metrics(model_update_metrics)
                         metrics_mgr.add_metric("time/step_model_update", step_model_update_timer.last)
 
+                    # TODO: this validation pass should be enabled, but should not be here, maybe move it to generate section.
                     # if self.val_dataset and global_step % self.pipeline_config.eval_steps == 0:
                     #     with Timer(name="val_step", logger=None) as val_step_timer:
                     #         val_metrics = self.val()

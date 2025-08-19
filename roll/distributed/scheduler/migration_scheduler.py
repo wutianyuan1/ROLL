@@ -98,7 +98,6 @@ class StaticAggMigrationScheduler(MigrationSchedulerBase):
         static policy, assume we have several (e.g., 128) requests on N separate workers,
         We want to migrate them to dest_workers once possible. Migration only happens once.
         '''
-        return {}
         current_time = time.time()
         if current_time - self.last_check_time <= StaticAggMigrationScheduler.CHECK_INTERVAL:
             print(f"==== scheduler: skip ({current_time - self.last_check_time})")
