@@ -48,7 +48,7 @@ class FCFSPolicy:
         assert event_to_run.event_type == EventType.READY
         if event_to_run.level == EventLevel.JOB:
             # If there are enough resource to schedule an init now
-            if len(resource_manager.available_devices) == resource_manager.cluster_size:
+            if resource_manager.num_available_devices == resource_manager.cluster_size:
                 resource_manager.register_job(
                     get_init_job_status(event_to_run.job_name, self.shared_storage)
                 )
@@ -60,8 +60,8 @@ class FCFSPolicy:
         elif event_to_run.phase == Phase.GENERATE:
             assert event_to_run.level == EventLevel.PHASE
             job_status = resource_manager.job_mapping[event_to_run.job_name]
-            print(f"[Policy] available_devices: {resource_manager.available_devices}, {job_status.max_gen_gpus}, {self.min_concurrency_ratio}")
-            if len(resource_manager.available_devices) / job_status.max_gen_gpus >= self.min_concurrency_ratio:
+            print(f"[Policy] available_devices: (gen){resource_manager.gen_available_devices} (train){resource_manager.train_available_devices}, {job_status.max_gen_gpus}, {self.min_concurrency_ratio}")
+            if len(resource_manager.gen_available_devices) / job_status.max_gen_gpus >= self.min_concurrency_ratio:
                 event_queue.pop(0)
                 events_to_execute = []
                 events_to_execute.append(
@@ -71,8 +71,9 @@ class FCFSPolicy:
                         value='running'
                     )
                 )
-                for i in range(len(resource_manager.available_devices) // job_status.gpus_per_gen_worker):
-                    resource_manager.allocate_worker(event_to_run.job_name)
+                for i in range(len(resource_manager.gen_available_devices) // job_status.gpus_per_gen_worker):
+                    workers = resource_manager.allocate_worker(event_to_run.job_name, 'gen')
+                    print(f"Alloc worker: {workers}")
                     events_to_execute.append(
                         Event(event_to_run.job_name,
                             EventType.STATUS,
@@ -86,16 +87,19 @@ class FCFSPolicy:
                 return None
         elif event_to_run.phase == Phase.TRAIN:
             job_status = resource_manager.job_mapping[event_to_run.job_name]
-            if len(resource_manager.available_devices) >= job_status.max_train_gpus:
+            if len(resource_manager.train_available_devices) >= job_status.max_train_gpus:
                 event_queue.pop(0)
+                resource_manager.allocate_worker(event_to_run.job_name, 'train')
                 return [Event(event_to_run.job_name, EventType.STATUS, phase=Phase.TRAIN, value='running')]
             else:
                 return None
         elif event_to_run.phase == Phase.UPDATE:
             job_status = resource_manager.job_mapping[event_to_run.job_name]
-            # TODO: fix gpu count here
-            if len(resource_manager.available_devices) >= job_status.max_train_gpus:
+            # TODO: fix gpu count here, now only update if all GPUs are free
+            # Update should not acquire all GPUs at the same time.
+            if resource_manager.num_available_devices == resource_manager.cluster_size:
                 event_queue.pop(0)
+                resource_manager.allocate_all(event_to_run.job_name)
                 return [Event(event_to_run.job_name, EventType.STATUS, phase=Phase.UPDATE, value='running')]
             else:
                 return None
@@ -109,7 +113,7 @@ class Scheduler:
         self.msg_channel = self.shared_storage.pubsub()
         self.msg_channel.subscribe("tenant_events")
         self.msg_channel.listen()
-        self.resource_manager = ResourceManager([0, 1, 2, 3])
+        self.resource_manager = ResourceManager(gen_device_ids=[2, 3], train_device_ids=[0, 1])
         self.ready_queue = []
         self.lock = threading.Lock()
         self.select_policy = policy
@@ -141,11 +145,19 @@ class Scheduler:
                 return
             elif event.level == EventLevel.PHASE:
                 # if init done or update done, then next step's generation is ready to run
-                if event.phase == Phase.INIT or event.phase == Phase.UPDATE:
+                if event.phase == Phase.INIT:
+                    ready_event = Event(
+                        job_name=event.job_name,
+                        event_type=EventType.READY,
+                        phase=Phase.UPDATE)
+                    self.ready_queue.append(ready_event)
+                # if update done, then free all its resources next step's generation is ready to run
+                elif event.phase == Phase.UPDATE:
                     ready_event = Event(
                         job_name=event.job_name,
                         event_type=EventType.READY,
                         phase=Phase.GENERATE)
+                    self.resource_manager.cleanup_by_name(event.job_name)
                     self.ready_queue.append(ready_event)
                 # if generate done, then its training is ready to begin
                 elif event.phase == Phase.GENERATE:
@@ -154,12 +166,13 @@ class Scheduler:
                         event_type=EventType.READY,
                         phase=Phase.TRAIN)
                     self.ready_queue.append(ready_event)
-                # if training done, then its parameter update is ready to begin
+                # if training done, then free its train resources and its parameter update is ready to begin
                 elif event.phase == Phase.TRAIN:
                     ready_event = Event(
                         job_name=event.job_name,
                         event_type=EventType.READY,
                         phase=Phase.UPDATE)
+                    self.resource_manager.cleanup_by_name(event.job_name)
                     self.ready_queue.append(ready_event)
                 else:
                     assert False, f"Unexpected finish event: {event}"
@@ -184,6 +197,7 @@ class Scheduler:
                 logging.info("Listen thread: exiting...")
                 break
             event: Event = EventParser.parse(data)
+            print(f"[Router] event: {event}, available_devices_before: (gen){self.resource_manager.gen_available_devices} (train){self.resource_manager.train_available_devices},")
             with self.lock:
                 self.backend_router.handle_event(event)  
 
