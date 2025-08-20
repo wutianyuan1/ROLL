@@ -171,3 +171,6 @@ log
 roll/multi_tenant/feijiu/
 experiments/figures/
 experiments/lunxi_logs
+experiments/
+slurm-*
+run_sbatch.sh

@@ -363,10 +363,12 @@ class DynamicSamplingScheduler:
 
         # Flow control measures. max_running_requests limits the maximum number of concurrent requests for each dp.
         # max_additional_running_prompts limits the number of prompts running simultaneously to avoid excessive consumption of prompts.
+        # enable_migration indicates whether to enable request migration
         self.max_running_requests = self.pipeline_config.max_running_requests
         self.max_additional_running_prompts = self.pipeline_config.max_additional_running_prompts
         self.is_use_additional_prompts = self.pipeline_config.is_use_additional_prompts
         self.alive_check_interval = self.pipeline_config.alive_check_interval
+        self.enable_migration = self.pipeline_config.enable_migration
 
         # HACK: We need to check alive at the beginning to get correct initial DP workers.
         self.last_alive_check = time.time() - self.alive_check_interval
@@ -531,7 +533,9 @@ class DynamicSamplingScheduler:
 
             # Madoka: the request migration logic based on re-calculation
             # `migrate_src_dst`: Dict[(from, to) -> List[req_id]], note that vLLM uses strings as req_ids.
-            migrate_src_dst = migration_scheduler.migrate(get_worker_stat_fns, self.request_id_2_dp_rank)
+            migrate_src_dst = {}
+            if self.enable_migration:
+                migrate_src_dst = migration_scheduler.migrate(get_worker_stat_fns, self.request_id_2_dp_rank)
             if len(migrate_src_dst) != 0:
                 mig_start_t = time.time()
                 # Before migration, first clean all old keys.
