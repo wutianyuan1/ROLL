@@ -91,6 +91,7 @@ class ResourceManager:
                 self.train_resource_mapping[j] = job_name
             self.train_available_devices.sort()
             assert self.job_mapping[job_name].allocated_gpus == [], f"Non-empty allocated_gpus before train: {self.job_mapping[job_name].allocated_gpus}"
+            self.job_mapping[job_name].allocated_gpus = gpus_to_allocate.copy()
             return gpus_to_allocate
         return None
 

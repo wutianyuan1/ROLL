@@ -36,6 +36,7 @@ from roll.utils.functionals import (
 from roll.utils.kl_controller import get_kl_controller
 from roll.utils.logging import get_logger
 from roll.utils.metrics.metrics_manager import MetricsManager
+from roll.utils.gpu_mem_monitor import GPUMemoryMonitor
 
 logger = get_logger()
 
@@ -243,7 +244,7 @@ class RLVRPipeline(BasePipeline):
                     node_id=ray.get_runtime_context().get_node_id(),
                     soft=False,
                 )
-            ).remote(pipeline_config=self.pipeline_config)
+            ).remote(pipeline_config=self.pipeline_config, job_name=self.job_name)
             ray.get(
                 generate_scheduler.set_scheduler.remote(
                     actor_cluster=self.actor_infer,
@@ -266,12 +267,13 @@ class RLVRPipeline(BasePipeline):
         if self.val_dataset:
             val_pipeline_config = copy.deepcopy(self.pipeline_config)
             val_pipeline_config.use_additional_prompts = False
+            val_pipeline_config.enable_migration = False
             self.val_generate_scheduler = DynamicSamplingScheduler.options(
                 scheduling_strategy=NodeAffinitySchedulingStrategy(
                     node_id=ray.get_runtime_context().get_node_id(),
                     soft=False,
                 )
-            ).remote(pipeline_config=val_pipeline_config)
+            ).remote(pipeline_config=val_pipeline_config, job_name=self.job_name)
         if self.val_dataset:
             ray.get(
                 self.val_generate_scheduler.set_scheduler.remote(
@@ -337,7 +339,7 @@ class RLVRPipeline(BasePipeline):
 
             metrics_mgr.clear_metrics()
             with tps_timer, Timer(name="step_total", logger=None) as step_total_timer:
-                with self.scheduler_section("update"):
+                with self.scheduler_section("update"), GPUMemoryMonitor(interval_sec=0.02) as gmonitor:
                     # 先model update，resume时不需要保存infer cluster的状态
                     if self.pipeline_config.adv_estimator == "gae":
                         self.critic.offload_states(blocking=True)
@@ -348,12 +350,6 @@ class RLVRPipeline(BasePipeline):
                         metrics_mgr.add_metrics(model_update_metrics)
                         metrics_mgr.add_metric("time/step_model_update", step_model_update_timer.last)
 
-                    # TODO: this validation pass should be enabled, but should not be here, maybe move it to generate section.
-                    # if self.val_dataset and global_step % self.pipeline_config.eval_steps == 0:
-                    #     with Timer(name="val_step", logger=None) as val_step_timer:
-                    #         val_metrics = self.val()
-                    #         metrics_mgr.add_metrics(val_metrics)
-                    #         metrics_mgr.add_metric("time/val_step", val_step_timer.last)
                 batch: DataProto = DataProto()
                 batch.meta_info = {"global_step": global_step}
 
@@ -367,6 +363,12 @@ class RLVRPipeline(BasePipeline):
                         self.actor_infer.start_server(data=DataProto(meta_info=batch.meta_info))
                         for reward_cluster in self.rewards.values():
                             reward_cluster.load_states()
+
+                        if self.val_dataset and global_step % self.pipeline_config.eval_steps == 0:
+                            with Timer(name="val_step", logger=None) as val_step_timer:
+                                val_metrics = self.val(init=False)
+                                metrics_mgr.add_metrics(val_metrics)
+                                metrics_mgr.add_metric("time/val_step", val_step_timer.last)
 
                         batch.meta_info["is_offload_states"] = False
                         scheduler_refs = {}
@@ -537,25 +539,27 @@ class RLVRPipeline(BasePipeline):
         logger.info("pipeline complete!")
 
     @torch.no_grad()
-    def val(self):
+    def val(self, init: bool = False):
         val_metrics_mgr = MetricsManager()
         batch = DataProto()
 
         with Timer(name="step_generate", logger=None) as step_generate_timer:
             batch.meta_info["is_offload_states"] = False
             batch.meta_info["generation_config"] = self.pipeline_config.validation.generating_args.to_dict()
-
-            self.actor_infer.start_server(data=DataProto(meta_info=batch.meta_info))
-            for reward_cluster in self.rewards.values():
-                reward_cluster.load_states()
+            # As we invoke val() inside the generate phase, initialization should be skipped
+            if init:
+                self.actor_infer.start_server(data=DataProto(meta_info=batch.meta_info))
+                for reward_cluster in self.rewards.values():
+                    reward_cluster.load_states()
             generate_output: DataProto = ray.get(
                 self.val_generate_scheduler.get_batch.remote(data=batch, batch_size=len(self.val_dataset)),
                 timeout=self.pipeline_config.rpc_timeout
             )
-            self.actor_infer.stop_server()
             generate_output.meta_info.pop("is_offload_states", None)
-            for reward_cluster in self.rewards.values():
-                reward_cluster.offload_states()
+            if init:
+                self.actor_infer.stop_server()
+                for reward_cluster in self.rewards.values():
+                    reward_cluster.offload_states()
             val_metrics_mgr.add_metric("time/step_generate", step_generate_timer.last)
 
         batch = generate_output

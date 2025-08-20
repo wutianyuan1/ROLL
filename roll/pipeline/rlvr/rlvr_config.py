@@ -112,6 +112,9 @@ class RLVRConfig(BaseConfig):
     max_additional_running_prompts: int = field(
         default=16, metadata={"help": "The additional number of running prompts, beyond batch_size."}
     )
+    enable_migration: bool = field(
+        default=False, metadata={"help": "Whether to enable migration to consolidate requests."}
+    )
 
     # role related
     pretrain: str = field(
