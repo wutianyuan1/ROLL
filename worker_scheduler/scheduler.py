@@ -39,12 +39,16 @@ class FCFSPolicy:
     def __init__(self, shared_storage: redis.StrictRedis, min_concurrency_ratio: float = 0.5):
         self.min_concurrency_ratio = min_concurrency_ratio
         self.shared_storage = shared_storage
+        self.prev_candidate = None
 
     def __call__(self, event_queue: List[Event], resource_manager: ResourceManager) -> Optional[List[Event]]:
         if len(event_queue) == 0:
             return None
         event_to_run: Event = event_queue[0]
-        print(f"[Policy] candidate event is {event_to_run}")
+        if event_to_run != self.prev_candidate:
+            # Only log the candidate event if it changes
+            logging.info(f"[Policy] candidate event is {event_to_run}")
+            self.prev_candidate = event_to_run
         assert event_to_run.event_type == EventType.READY
         if event_to_run.level == EventLevel.JOB:
             # If there are enough resource to schedule an init now
@@ -60,7 +64,6 @@ class FCFSPolicy:
         elif event_to_run.phase == Phase.GENERATE:
             assert event_to_run.level == EventLevel.PHASE
             job_status = resource_manager.job_mapping[event_to_run.job_name]
-            print(f"[Policy] available_devices: (gen){resource_manager.gen_available_devices} (train){resource_manager.train_available_devices}, {job_status.max_gen_gpus}, {self.min_concurrency_ratio}")
             if len(resource_manager.gen_available_devices) / job_status.max_gen_gpus >= self.min_concurrency_ratio:
                 event_queue.pop(0)
                 events_to_execute = []
@@ -73,7 +76,7 @@ class FCFSPolicy:
                 )
                 for i in range(len(resource_manager.gen_available_devices) // job_status.gpus_per_gen_worker):
                     workers = resource_manager.allocate_worker(event_to_run.job_name, 'gen')
-                    print(f"Alloc worker: {workers}")
+                    logging.info(f"[ResourceManager] Alloc worker: {workers}")
                     events_to_execute.append(
                         Event(event_to_run.job_name,
                             EventType.STATUS,
@@ -94,15 +97,9 @@ class FCFSPolicy:
             else:
                 return None
         elif event_to_run.phase == Phase.UPDATE:
-            job_status = resource_manager.job_mapping[event_to_run.job_name]
-            # TODO: fix gpu count here, now only update if all GPUs are free
-            # Update should not acquire all GPUs at the same time.
-            if resource_manager.num_available_devices == resource_manager.cluster_size:
-                event_queue.pop(0)
-                resource_manager.allocate_all(event_to_run.job_name)
-                return [Event(event_to_run.job_name, EventType.STATUS, phase=Phase.UPDATE, value='running')]
-            else:
-                return None
+            # Madoka: we observe that update do not require any resources, so it can be executed immediately
+            event_queue.pop(0)
+            return [Event(event_to_run.job_name, EventType.STATUS, phase=Phase.UPDATE, value='running')]
         else:
             assert False, f"Unexpected event in policy: {event_to_run}"
 
@@ -157,7 +154,6 @@ class Scheduler:
                         job_name=event.job_name,
                         event_type=EventType.READY,
                         phase=Phase.GENERATE)
-                    self.resource_manager.cleanup_by_name(event.job_name)
                     self.ready_queue.append(ready_event)
                 # if generate done, then its training is ready to begin
                 elif event.phase == Phase.GENERATE:
@@ -197,7 +193,7 @@ class Scheduler:
                 logging.info("Listen thread: exiting...")
                 break
             event: Event = EventParser.parse(data)
-            print(f"[Router] event: {event}, available_devices_before: (gen){self.resource_manager.gen_available_devices} (train){self.resource_manager.train_available_devices},")
+            logging.info(f"[Router] event: {event}, available_devices_before: (gen){self.resource_manager.gen_available_devices} (train){self.resource_manager.train_available_devices},")
             with self.lock:
                 self.backend_router.handle_event(event)  
 
@@ -214,7 +210,7 @@ class Scheduler:
                     time.sleep(0.5)
                     continue
                 else:
-                    print(f"[Scheduler] will execute {events_to_execute}")
+                    logging.info(f"[Scheduler] will execute {events_to_execute}")
                 assert len(events_to_execute) != 0
                 for e in events_to_execute:
                     e.execute(self.shared_storage)
@@ -227,6 +223,12 @@ class Scheduler:
 
 
 if __name__ == '__main__':
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s | %(name)s | %(message)s',
+        datefmt='%Y/%m/%d %H:%M:%S'
+    )
+
     master_addr = os.environ.get("MASTER_ADDR", "localhost")
     scheduler_port = int(os.environ.get("SCHEDULER_PORT", "9969"))
     redis_server_proc = subprocess.Popen(
@@ -245,7 +247,7 @@ if __name__ == '__main__':
             break
         except:
             continue
-    print("[Scheduler] connected to redis.")
+    logging.info("[Scheduler] connected to redis.")
     policy = FCFSPolicy(shared_storage=shared_storage, min_concurrency_ratio=1.0)
     scheduler = Scheduler(shared_storage, policy)
     scheduler.run()

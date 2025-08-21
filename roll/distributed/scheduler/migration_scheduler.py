@@ -80,6 +80,7 @@ class StaticAggMigrationScheduler(MigrationSchedulerBase):
         self.start_time = time.time()
         self.last_check_time = self.start_time
         self.migrated = False
+        self.started = True
         self.dest_workers = dest_workers
         self.batch_size = max_batch_size
 
@@ -104,9 +105,13 @@ class StaticAggMigrationScheduler(MigrationSchedulerBase):
             return {}
         self.last_check_time = current_time
 
-        if current_time - self.start_time >= 5 and (not self.migrated):
-            worker_stats: List[EngineStats] = [ray.get(fn.remote()) for fn in get_worker_stat_fns]
-            engine_unfinished_reqs = [i.num_unfinished_reqs for i in worker_stats]
+        worker_stats: List[EngineStats] = [ray.get(fn.remote()) for fn in get_worker_stat_fns]
+        engine_unfinished_reqs = [i.num_unfinished_reqs for i in worker_stats]
+        if len(engine_unfinished_reqs) > 0 and (not self.started):
+            self.started = True
+            self.start_time = current_time
+            self.last_check_time = current_time
+        if self.started and current_time - self.start_time >= 5 and (not self.migrated):
             print(f"==== scheduler check: migrated={self.migrated}, since_start={current_time - self.start_time}, engine_unfinished_reqs={engine_unfinished_reqs}, request_mapping_len={len(request_mapping)}")
             if sum(engine_unfinished_reqs) <= len(self.dest_workers) * self.batch_size:
                 per_worker_reqs = self._aggregate_reqs(request_mapping)
