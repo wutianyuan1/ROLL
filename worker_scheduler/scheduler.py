@@ -110,7 +110,7 @@ class Scheduler:
         self.msg_channel = self.shared_storage.pubsub()
         self.msg_channel.subscribe("tenant_events")
         self.msg_channel.listen()
-        self.resource_manager = ResourceManager(gen_device_ids=[2, 3], train_device_ids=[0, 1])
+        self.resource_manager = ResourceManager(gen_device_ids=list(range(0, 8)), train_device_ids=list(range(8, 16)))
         self.ready_queue = []
         self.lock = threading.Lock()
         self.select_policy = policy
