@@ -133,7 +133,7 @@ actor_infer:
       gpu_memory_utilization: 0.7
       block_size: 16
       max_model_len: 32768
-  device_mapping: list(range(8,16))
+  device_mapping: list(range(8,12))
   infer_batch_size: 1
 
 reference:
@@ -161,5 +161,5 @@ rewards:
     data_args:
       template: ${global_template}
     tag_included: [deepmath_103k, aime]
-    world_size: 8
+    world_size: 4
     infer_batch_size: 1

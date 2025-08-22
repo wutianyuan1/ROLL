@@ -1,1 +1,1 @@
-HF_ENDPOINT=https://hf-mirror.com SCHEDULER_ADDR=33.93.225.143 VLLM_USE_V1=0 PYTHONPATH=. MASTER_ADDR=33.93.225.143 python examples/start_rlvr_pipeline.py --config_path qwen2.5-7B-rlvr_megatron --config_name rlvr_config_disagg
+HF_ENDPOINT=https://hf-mirror.com SCHEDULER_ADDR=33.93.225.143 VLLM_USE_V1=0 PYTHONPATH=. MASTER_ADDR=33.93.225.143 NCCL_SOCKET_IFNAME=eth0 python examples/start_rlvr_pipeline.py --config_path qwen2.5-7B-rlvr_megatron --config_name rlvr_config_disagg
