@@ -104,12 +104,12 @@ actor_train:
   strategy_args:
     strategy_name: megatron_train
     strategy_config:
-      tensor_model_parallel_size: 1
+      tensor_model_parallel_size: 2
       pipeline_model_parallel_size: 1
       expert_model_parallel_size: 1
       use_distributed_optimizer: true
-      recompute_granularity: full
-  device_mapping: list(range(8,16))
+      # recompute_granularity: full
+  device_mapping: list(range(0,8))
   infer_batch_size: 1
   use_remove_padding: true
 
@@ -133,7 +133,7 @@ actor_infer:
       gpu_memory_utilization: 0.7
       block_size: 16
       max_model_len: 32768
-  device_mapping: list(range(0,8))
+  device_mapping: list(range(8,16))
   infer_batch_size: 1
 
 reference:
@@ -150,7 +150,7 @@ reference:
       tensor_model_parallel_size: 1
       pipeline_model_parallel_size: 1
       expert_model_parallel_size: 1
-  device_mapping: list(range(8,16))
+  device_mapping: list(range(0,8))
   infer_batch_size: 8
 
 rewards:

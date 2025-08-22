@@ -57,12 +57,14 @@ class ActorWorker(Worker):
         self.logger.info(f"{self.worker_name} initialized")
 
         self.strategy.offload_states()
+        self.logger.info(f"{self.worker_name} offloaded")
 
         # Cuda must have been initialized when calling torch.cuda.reset_max_memory_allocated
         # with arguments (inside state_offload_manager). We explicitly init cuda here because
         # current process is used as engine client when using vllm v1 engine, and
         # there is no chance to init cuda context.
         torch.cuda.init()
+        self.logger.info(f"{self.worker_name} cuda inited")
 
     @register(dispatch_mode=Dispatch.DP_MP_DISPATCH_FIRST)
     def train_step(self, data: DataProto):
