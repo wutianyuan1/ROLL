@@ -77,7 +77,7 @@ class Worker:
         )
         try:
             self.shared_storage = redis.StrictRedis(
-                host=os.environ.get("MASTER_ADDR", "localhost"),
+                host=os.environ.get("SCHEDULER_ADDR", "localhost"),
                 port=int(os.environ.get("SCHEDULER_PORT", "9969")),
                 db=0
             )

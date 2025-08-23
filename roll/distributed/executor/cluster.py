@@ -108,9 +108,12 @@ class Cluster:
                 "CLUSTER_NAME": self.cluster_name,
                 "WORKER_NAME": worker_name,
                 "JOB_NAME": self.job_name,
+                "SCHEDULER_ADDR": os.environ.get("SCHEDULER_ADDR", "localhost"),
                 "SCHEDULER_PORT": os.environ.get("SCHEDULER_PORT", "9969"),
                 "VLLM_USE_V1": os.environ.get("VLLM_USE_V1", "1"),
-                "GPUS_PER_NODE": str(self.resource_manager.gpu_per_node)
+                "GPUS_PER_NODE": str(self.resource_manager.gpu_per_node),
+                "USE_MODELSCOPE": os.environ.get("USE_MODELSCOPE", "0"),
+                "NCCL_SOCKET_IFNAME": os.environ.get("NCCL_SOCKET_IFNAME", "eth0"),
             }
 
             if rank != 0:

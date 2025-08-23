@@ -14,6 +14,7 @@ import random
 from codetiming import Timer
 from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
 from ray.util.timer import _Timer
+from ray.runtime_env import RuntimeEnv
 
 from roll.multi_tenant.lock_utils import redis_lock
 from roll.datasets.chat_template import get_chat_template
@@ -243,7 +244,8 @@ class RLVRPipeline(BasePipeline):
                 scheduling_strategy=NodeAffinitySchedulingStrategy(
                     node_id=ray.get_runtime_context().get_node_id(),
                     soft=False,
-                )
+                ),
+                runtime_env=RuntimeEnv(env_vars=dict(os.environ))
             ).remote(pipeline_config=self.pipeline_config, job_name=self.job_name)
             ray.get(
                 generate_scheduler.set_scheduler.remote(
@@ -272,7 +274,8 @@ class RLVRPipeline(BasePipeline):
                 scheduling_strategy=NodeAffinitySchedulingStrategy(
                     node_id=ray.get_runtime_context().get_node_id(),
                     soft=False,
-                )
+                ),
+                runtime_env=RuntimeEnv(env_vars=dict(os.environ))
             ).remote(pipeline_config=val_pipeline_config, job_name=self.job_name)
         if self.val_dataset:
             ray.get(

@@ -86,6 +86,10 @@ class WorkerConfig:
         default_factory=dict,
         metadata={"help": "system environment variables for this worker."}
     )
+    use_remove_padding: bool = field(
+        default=False,
+        metadata={"help": "Remove tail padding token in a micro batch, don't pack sequences(different from verl). must set `variable_seq_lengths` for megatron."}
+    )
 
     def __post_init__(self):
 
