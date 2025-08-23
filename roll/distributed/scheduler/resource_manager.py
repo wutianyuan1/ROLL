@@ -42,7 +42,7 @@ class ResourceManager:
             for i in range(self.num_nodes):
                 node = nodes_maybe_used[i]
                 node_cpu = int(node["Resources"]["CPU"])
-                bundles.append({"GPU": self.gpu_per_node, "CPU": max(32, 1)})
+                bundles.append({"GPU": self.gpu_per_node, "CPU": max(node_cpu / 2, 1)})
 
             self.placement_groups = [ray.util.placement_group([bundle]) for bundle in bundles]
             ray.get([pg.ready() for pg in self.placement_groups])
