@@ -104,7 +104,7 @@ actor_train:
   strategy_args:
     strategy_name: megatron_train
     strategy_config:
-      tensor_model_parallel_size: 2
+      tensor_model_parallel_size: 1
       pipeline_model_parallel_size: 1
       expert_model_parallel_size: 1
       use_distributed_optimizer: true
@@ -132,7 +132,7 @@ actor_infer:
     strategy_config:
       gpu_memory_utilization: 0.7
       block_size: 16
-      max_model_len: 32768
+      max_model_len: 4096
   device_mapping: list(range(8,12))
   infer_batch_size: 1
 

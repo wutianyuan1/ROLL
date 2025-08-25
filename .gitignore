@@ -174,3 +174,5 @@ experiments/lunxi_logs
 experiments/
 slurm-*
 run_sbatch.sh
+models/
+output/
