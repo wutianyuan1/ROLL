@@ -93,7 +93,8 @@ class Cluster:
 
     def _create_workers(self):
         placement_groups: List[List[Dict]] = self.resource_manager.allocate_placement_group(
-            device_mapping=self.worker_config.device_mapping, world_size=self.worker_config.world_size
+            device_mapping=self.worker_config.device_mapping, world_size=self.worker_config.world_size,
+            device_affinity=self.worker_config.device_affinity
         )
         logger.debug(f"placement_groups: {placement_groups}")
 

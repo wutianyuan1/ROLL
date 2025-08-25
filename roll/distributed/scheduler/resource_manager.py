@@ -5,7 +5,7 @@ from typing import Dict, List, Tuple, Optional
 import ray
 from ray.util.placement_group import PlacementGroup
 
-from roll.utils.ray_utils import get_visible_gpus, get_node_rank
+from roll.utils.ray_utils import get_visible_gpus, get_node_rank, get_device_type
 
 
 class ResourceManager:
@@ -52,6 +52,13 @@ class ResourceManager:
                     for pg in self.placement_groups
                 ]
             )
+
+            gpu_types = ray.get(
+                [
+                    get_device_type.options(placement_group=pg, num_gpus=self.gpu_per_node).remote()
+                    for pg in self.placement_groups
+                ]
+            )
             print(f"gpu ranks: {gpu_ranks}")
             self.node_ranks = list(range(len(self.placement_groups)))
 
@@ -60,6 +67,19 @@ class ResourceManager:
             for node_rank, placement_group in zip(self.node_ranks, self.placement_groups):
                 self.node2pg[node_rank] = placement_group
             print(f"node2pg: {self.node2pg}")
+
+            self.affinity_node2pg: Dict[str, List[PlacementGroup]] = {
+                'Default': []
+            }
+            for node_rank in self.node_ranks:
+                # First, every node's placement group should be in the 'Default' pool for fallback use.
+                self.affinity_node2pg['Default'].append(self.node2pg[node_rank])
+                # Then, try to get this node's device type, and put it into corresponding pool.
+                gpu_type = gpu_types[node_rank]
+                if gpu_type not in self.affinity_node2pg:
+                    self.affinity_node2pg[gpu_type] = [self.node2pg[node_rank]]
+                else:
+                    self.affinity_node2pg[gpu_type].append(self.node2pg[node_rank])
         else:
             assert self.num_nodes == 1
             node = nodes_maybe_used[0]
@@ -81,7 +101,7 @@ class ResourceManager:
     def destroy_placement_group(self):
         [ray.util.remove_placement_group(pg) for pg in self.placement_groups]
 
-    def allocate_placement_group(self, world_size, device_mapping: List[int] = None) -> List[List[Dict]]:
+    def allocate_placement_group(self, world_size, device_mapping: List[int] = None, device_affinity: str = None) -> List[List[Dict]]:
         """
             Allocate resources according to device_mapping (numbered by GPU RANK)
             - GPUs: Specify required GPU indices via device_mapping
@@ -114,7 +134,15 @@ class ResourceManager:
                     assert node_rank < self.num_nodes, (f"device_mapping used gpus are more than "
                                                         f"num_nodes×num_gpus_per_node={self.num_nodes}×{self.gpu_per_node}")
 
-                    pg = self.nodes_placement_group(node_rank)
+                    if device_affinity is None:
+                        pg = self.nodes_placement_group(node_rank)
+                    else:
+                        if device_affinity not in self.affinity_node2pg.keys():
+                            print(f"Warning: cannot find device type {device_affinity}, fallback to the global pool.")
+                            device_affinity = 'Default'
+                        pg = self.affinity_node2pg[device_affinity][node_rank]
+                        # If one pg is allocated, remove it from default pool to avoid re-allocation
+                        self.affinity_node2pg['Default'].remove(device_affinity)
                     pg_list.append(
                         dict(node_rank=node_rank, gpu_rank=gpu_rank, placement_group=pg, ray_address=ray_address)
                     )

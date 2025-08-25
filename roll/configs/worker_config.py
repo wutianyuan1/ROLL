@@ -66,6 +66,13 @@ class WorkerConfig:
             "If device_mapping is None, the worker uses cpu only."
         },
     )
+    device_affinity: str = field(
+        default=None,
+        metadata={"help": "Device affinity should be GPU type (e.g., 'NVIDIA H20') or None"
+                  "If affinity is set, device_mapping becomes the local device ids"
+                  "in the corresponding device pool instead of global ids."
+                  "If one cluster (e.g., train) sets affinity, all clusters should set."}
+    )
     num_gpus_per_worker: int = field(
         default=1,
         metadata={"help": "The number of gpu per worker."}
@@ -118,6 +125,9 @@ class WorkerConfig:
             self.world_size = len(self.device_mapping) // self.num_gpus_per_worker
         else:
             self.num_gpus_per_worker = 0
+
+        if self.device_affinity is not None:
+            assert self.device_mapping is not None, f"Cannot set affinity {self.device_affinity} for a non-GPU worker."
 
         self.resource_placement_groups: Optional[List[Dict]] = None
         self.checkpoint_config: Optional[Dict] = None
