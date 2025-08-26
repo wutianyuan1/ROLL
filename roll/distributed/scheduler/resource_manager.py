@@ -141,8 +141,6 @@ class ResourceManager:
                             print(f"Warning: cannot find device type {device_affinity}, fallback to the global pool.")
                             device_affinity = 'Default'
                         pg = self.affinity_node2pg[device_affinity][node_rank]
-                        # If one pg is allocated, remove it from default pool to avoid re-allocation
-                        self.affinity_node2pg['Default'].remove(device_affinity)
                     pg_list.append(
                         dict(node_rank=node_rank, gpu_rank=gpu_rank, placement_group=pg, ray_address=ray_address)
                     )
