@@ -264,10 +264,13 @@ class ActorWorker(Worker):
             self.shared_storage.set(status_key, "pending")
             # Release GPUs acquired by this worker
             device_info = self.get_devices_info()
+            device_affinity = os.environ.get("DEVICE_AFFINITY", None)
+            if device_affinity == 'None':
+                device_affinity = None
             gpus_per_node = int(os.environ.get("GPUS_PER_NODE", 1))
-            global_gpu_ids_str = ",".join([str(i['gpu_rank'] + i['node_rank'] * gpus_per_node) for i in device_info])
+            release_content = device_affinity + ',' + ",".join([str(i['gpu_rank'] + i['node_rank'] * gpus_per_node) for i in device_info])
             self.shared_storage.set(f"{self.job_name}:generate:{self.rank}:active_time", time.time() - self.worker_start_time)
-            self.shared_storage.publish("tenant_events", f"{self.job_name}:generate:{self.rank}:release_gpu[{global_gpu_ids_str}]")
+            self.shared_storage.publish("tenant_events", f"{self.job_name}:generate:{self.rank}:release_gpu[{release_content}]")
         return self.stop_server_metrics
 
     def get_stats(self) -> EngineStats:

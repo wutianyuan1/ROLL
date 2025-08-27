@@ -176,3 +176,4 @@ slurm-*
 run_sbatch.sh
 models/
 output/
+file_sync.sh

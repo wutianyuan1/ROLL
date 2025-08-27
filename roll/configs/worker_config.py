@@ -73,6 +73,10 @@ class WorkerConfig:
                   "in the corresponding device pool instead of global ids."
                   "If one cluster (e.g., train) sets affinity, all clusters should set."}
     )
+    num_gpus_per_node: int = field(
+        default=None,
+        metadata={"help": "The number of gpu per node."}
+    )
     num_gpus_per_worker: int = field(
         default=1,
         metadata={"help": "The number of gpu per worker."}

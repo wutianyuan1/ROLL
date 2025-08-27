@@ -110,7 +110,7 @@ class Scheduler:
         self.msg_channel = self.shared_storage.pubsub()
         self.msg_channel.subscribe("tenant_events")
         self.msg_channel.listen()
-        self.resource_manager = ResourceManager(gen_device_ids=list(range(8, 16)), train_device_ids=list(range(0, 8)))
+        self.resource_manager = ResourceManager(gen_device_affinity='NVIDIA H20', gen_device_ids=list(range(0, 4)), train_device_affinity='NVIDIA L20X', train_device_ids=list(range(0, 8)))
         self.ready_queue = []
         self.lock = threading.Lock()
         self.select_policy = policy
@@ -126,7 +126,9 @@ class Scheduler:
         def handle_gpu_release(event: Event) -> None:
             '''on GPU release: ask the resource manager to free corresponding GPUs'''
             assert event.value is not None
-            self.resource_manager.release(event.job_name, [int(i) for i in event.value.split(",")])
+            # E.g. 'NVIDIA H20,0,1,2,3'
+            device_affinity, *gpu_list = event.value.split(',')
+            self.resource_manager.release(event.job_name, device_affinity, [int(i) for i in gpu_list])
 
         def handle_job_creation(event: Event) -> None:
             '''on job creation: simply forward this message to ready queue'''

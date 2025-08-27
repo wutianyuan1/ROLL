@@ -54,7 +54,7 @@ class Event:
         - done (job/phase/worker finished):
             * value (optional): (int) step count 
         - release_gpu:
-            * value (mandatory): (list[int]) gpu IDs
+            * value (mandatory): (str) device_affinity + (list[int]) gpu IDs, e.g. [NVIDIA H20,0,1,2,3]
     """
     def __init__(self, job_name: str,
                  event_type: EventType, 
@@ -119,7 +119,7 @@ class EventParser:
         # Job-level events: job:event_type
         re.compile(r"^(?P<job_name>[^:]+):(?P<event_type>[^:]+)$"),
     ]
-    EVENT_INFO_PATTERN = re.compile(r'^(?P<event_type>[a-zA-Z_]+)(?:\[(?P<event_value>[0-9,]+)\])?$')
+    EVENT_INFO_PATTERN = re.compile(r'^(?P<event_type>[a-zA-Z_]+)(?:\[(?P<event_value>([a-zA-Z0-9_\s,]+)?[0-9,]+)\])?$')
 
     @classmethod
     def parse(cls, event_key: str) -> Optional[Event]:
@@ -143,5 +143,7 @@ if __name__ == "__main__":
     parser = EventParser()
     print(parser.parse("job1:created"))
     print(parser.parse("job1:generate:done[0]"))
-    print(parser.parse("job1:init:release_gpu[0,1,2,3]"))
-    print(parser.parse("job1:generate:1:release_gpu[0,1,2,3]"))
+    # print(parser.parse("job1:init:release_gpu[0,1,2,3]"))
+    print(parser.parse("job1:init:release_gpu[NVIDIA H20,0,1,2,3]"))
+    # print(parser.parse("job1:generate:1:release_gpu[0,1,2,3]"))
+    print(parser.parse("job1:generate:1:release_gpu[NVIDIA H20,0,1,2,3]"))
