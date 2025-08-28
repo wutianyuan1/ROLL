@@ -12,9 +12,6 @@ elif "0.8.4" in vllm.__version__:
     LLM = Llm084
     AsyncLLM = AsyncLLM084
 else:
-    from roll.third_party.vllm.vllm_0_8_4.llm import Llm084
-    from roll.third_party.vllm.vllm_0_8_4.v1.async_llm import AsyncLLM084
-    LLM = Llm084
-    AsyncLLM = AsyncLLM084
+    raise NotImplementedError(f"Scale aligner version {vllm.__version__} is not supported.")
 
 __all__ = ["LLM", "AsyncLLM"]
