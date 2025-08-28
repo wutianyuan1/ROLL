@@ -57,12 +57,14 @@ class ActorWorker(Worker):
         self.logger.info(f"{self.worker_name} initialized")
 
         self.strategy.offload_states()
+        self.logger.info(f"{self.worker_name} offloaded")
 
         # Cuda must have been initialized when calling torch.cuda.reset_max_memory_allocated
         # with arguments (inside state_offload_manager). We explicitly init cuda here because
         # current process is used as engine client when using vllm v1 engine, and
         # there is no chance to init cuda context.
         torch.cuda.init()
+        self.logger.info(f"{self.worker_name} cuda inited")
 
     @register(dispatch_mode=Dispatch.DP_MP_DISPATCH_FIRST)
     def train_step(self, data: DataProto):
@@ -262,10 +264,13 @@ class ActorWorker(Worker):
             self.shared_storage.set(status_key, "pending")
             # Release GPUs acquired by this worker
             device_info = self.get_devices_info()
+            device_affinity = os.environ.get("DEVICE_AFFINITY", None)
+            if device_affinity == 'None':
+                device_affinity = None
             gpus_per_node = int(os.environ.get("GPUS_PER_NODE", 1))
-            global_gpu_ids_str = ",".join([str(i['gpu_rank'] + i['node_rank'] * gpus_per_node) for i in device_info])
+            release_content = device_affinity + ',' + ",".join([str(i['gpu_rank'] + i['node_rank'] * gpus_per_node) for i in device_info])
             self.shared_storage.set(f"{self.job_name}:generate:{self.rank}:active_time", time.time() - self.worker_start_time)
-            self.shared_storage.publish("tenant_events", f"{self.job_name}:generate:{self.rank}:release_gpu[{global_gpu_ids_str}]")
+            self.shared_storage.publish("tenant_events", f"{self.job_name}:generate:{self.rank}:release_gpu[{release_content}]")
         return self.stop_server_metrics
 
     def get_stats(self) -> EngineStats:

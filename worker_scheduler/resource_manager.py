@@ -15,7 +15,9 @@ class JobStatus:
 
 
 class ResourceManager:
-    def __init__(self, gen_device_ids: List[int], train_device_ids: List[int]) -> None:
+    def __init__(self, gen_device_affinity: str, gen_device_ids: List[int], train_device_affinity: str,  train_device_ids: List[int]) -> None:
+        self.gen_device_affinity = gen_device_affinity
+        self.train_device_affinity = train_device_affinity
         self.gen_available_devices = sorted(gen_device_ids.copy())
         self.train_available_devices = sorted(train_device_ids.copy())
         self.gen_resource_mapping: Dict[int, str] = {i: None for i in gen_device_ids}
@@ -33,22 +35,26 @@ class ResourceManager:
     def cluster_size(self):
         return self.gen_cluster_size + self.train_cluster_size
 
-    def release(self, job_name: str, gpu_list: List[int]):
+    def release(self, job_name: str, device_affinity: str, gpu_list: List[int]):
         '''Release the given GPU list'''
-        assert len(set(gpu_list).intersection(self.train_available_devices)) == 0
-        assert len(set(gpu_list).intersection(self.gen_available_devices)) == 0
-        for i in gpu_list:
-            if i in self.train_resource_mapping:
-                self.train_resource_mapping[i] = None
-                self.train_available_devices.append(i)
-            elif i in self.gen_resource_mapping:
+        assert device_affinity in [self.gen_device_affinity, self.train_device_affinity], \
+            f"Try to release GPUs in {device_affinity}, which doesn't match device type of train/gen devices"
+        if device_affinity == self.gen_device_affinity:
+            assert len(set(gpu_list).intersection(self.gen_available_devices)) == 0
+            for i in gpu_list:
+                assert i in self.gen_resource_mapping, f"Try to release GPU: {i}, which is not in gen pool"
                 self.gen_resource_mapping[i] = None
                 self.gen_available_devices.append(i)
-            else:
-                assert False, f"Try to release GPU: {i}, which is not in train/gen pool"
-            self.job_mapping[job_name].allocated_gpus.remove(i)
-        self.train_available_devices.sort()
-        self.gen_available_devices.sort()
+                self.job_mapping[job_name].allocated_gpus.remove(i)
+            self.gen_available_devices.sort()
+        else:
+            assert len(set(gpu_list).intersection(self.train_available_devices)) == 0
+            for i in gpu_list:
+                assert i in self.train_resource_mapping, f"Try to release GPU: {i}, which is not in train pool"
+                self.train_resource_mapping[i] = None
+                self.train_available_devices.append(i)
+                self.job_mapping[job_name].allocated_gpus.remove(i)
+            self.train_available_devices.sort()
 
     def register_job(self, init_job_status: JobStatus):
         assert init_job_status.max_gen_gpus <= self.gen_cluster_size

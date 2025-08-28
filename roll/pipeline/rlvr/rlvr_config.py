@@ -113,7 +113,7 @@ class RLVRConfig(BaseConfig):
         default=16, metadata={"help": "The additional number of running prompts, beyond batch_size."}
     )
     enable_migration: bool = field(
-        default=False, metadata={"help": "Whether to enable migration to consolidate requests."}
+        default=True, metadata={"help": "Whether to enable migration to consolidate requests."}
     )
 
     # role related

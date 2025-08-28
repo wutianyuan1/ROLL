@@ -104,12 +104,14 @@ actor_train:
   strategy_args:
     strategy_name: megatron_train
     strategy_config:
-      tensor_model_parallel_size: 2
+      tensor_model_parallel_size: 1
       pipeline_model_parallel_size: 1
       expert_model_parallel_size: 1
       use_distributed_optimizer: true
       # recompute_granularity: full
   device_mapping: list(range(0,8))
+  device_affinity: 'NVIDIA L20X'
+  num_gpus_per_node: 8
   infer_batch_size: 1
   use_remove_padding: true
 
@@ -132,8 +134,10 @@ actor_infer:
     strategy_config:
       gpu_memory_utilization: 0.7
       block_size: 16
-      max_model_len: 32768
-  device_mapping: list(range(8,12))
+      max_model_len: 4096
+  device_mapping: list(range(0,4))
+  device_affinity: 'NVIDIA H20'
+  num_gpus_per_node: 4
   infer_batch_size: 1
 
 reference:
@@ -150,6 +154,8 @@ reference:
       tensor_model_parallel_size: 1
       pipeline_model_parallel_size: 1
       expert_model_parallel_size: 1
+  device_affinity: 'NVIDIA L20X'
+  num_gpus_per_node: 8
   device_mapping: list(range(0,8))
   infer_batch_size: 8
 

@@ -104,8 +104,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def __init__(self, pipeline_config):
         set_seed(seed=pipeline_config.seed)
         self.pipeline_config = pipeline_config
-        self.resource_manager = ResourceManager(num_nodes=self.pipeline_config.num_nodes,
-                                                num_gpus_per_node=self.pipeline_config.num_gpus_per_node)
+        self.resource_manager = ResourceManager(da_2_num_nodes=self.pipeline_config.da_2_num_nodes,
+                                                da_2_num_gpus_per_node=self.pipeline_config.da_2_num_gpus_per_node)
         self.state = WorkerState()
         self.checkpoint_manager = CheckpointManager(checkpoint_config=self.pipeline_config.checkpoint_config)
         self.tracker = create_tracker(
@@ -133,8 +133,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def __post_init__(self):
         if self.shared_storage is not None:
             # Notify the scheduler that the resources used for initialization can be released
-            gpu_list_str = ",".join([str(i) for i in range(self.resource_manager.num_gpus)])
-            self.shared_storage.publish("tenant_events", f"{self.job_name}:init:release_gpu[{gpu_list_str}]")
+            for da, num_gpus in self.resource_manager.da_2_num_gpus.items():
+                release_content = da + ',' + ",".join([str(i) for i in range(num_gpus)])
+                self.shared_storage.publish("tenant_events", f"{self.job_name}:init:release_gpu[{release_content}]")
             # Publish that the current job's initialization is finished
             self.shared_storage.publish("tenant_events", f"{self.job_name}:init:done")
             # After initialization, change itself's status to 'running'

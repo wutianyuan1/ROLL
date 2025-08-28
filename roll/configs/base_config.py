@@ -208,17 +208,27 @@ class BaseConfig:
         os.environ.update(self.system_envs)
 
         # the required num nodes
-        total_devices = []
+        da_2_total_devices = {} # {device_affinity: devices}
+        self.da_2_num_gpus_per_node = {} # {device_affinity: num_gpus_per_node}
         for attribute_name in dir(self):
             attribute = getattr(self, attribute_name)
             if isinstance(attribute, WorkerConfig):
                 if attribute.device_mapping is not None:
-                    total_devices.extend(attribute.device_mapping)
-        max_gpu_num = max(total_devices)
-        if max_gpu_num <= self.num_gpus_per_node:
-            self.num_nodes = 1
-        else:
-            self.num_nodes = (max_gpu_num + self.num_gpus_per_node - 1) // self.num_gpus_per_node
+                    da = getattr(attribute, 'device_affinity', 'Default')
+                    num_gpus_per_node = getattr(attribute, 'num_gpus_per_node', self.num_gpus_per_node)
+                    if da not in da_2_total_devices:
+                        assert da not in self.da_2_num_gpus_per_node
+                        da_2_total_devices[da] = []
+                        self.da_2_num_gpus_per_node[da] = num_gpus_per_node
+                    assert self.da_2_num_gpus_per_node[da] == num_gpus_per_node
+                    da_2_total_devices[da].extend(attribute.device_mapping)
+
+        assert da_2_total_devices.keys() == self.da_2_num_gpus_per_node.keys()
+        # +1 when counting GPUs because device_mapping is the indices.
+        max_gpu_nums = {device_affinity: max(devices) + 1 for device_affinity, devices in da_2_total_devices.items()}
+        self.da_2_num_nodes = {device_affinity: (max_gpu_nums[device_affinity] + self.da_2_num_gpus_per_node[device_affinity] - 1) // self.da_2_num_gpus_per_node[device_affinity]
+                               for device_affinity in da_2_total_devices.keys()}
+        print(f"***** BaseConfig: da_2_total_devices = {da_2_total_devices}; max_gpu_nums = {max_gpu_nums}; da_2_num_gpus_per_node = {self.da_2_num_gpus_per_node}; da_2_num_nodes = {self.da_2_num_nodes} *****")
 
 
     def set_max_steps(self, max_steps: int):

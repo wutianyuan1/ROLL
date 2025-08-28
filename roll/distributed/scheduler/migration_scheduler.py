@@ -113,11 +113,14 @@ class StaticAggMigrationScheduler(MigrationSchedulerBase):
             self.last_check_time = current_time
         if self.started and current_time - self.start_time >= 5 and (not self.migrated):
             print(f"==== scheduler check: migrated={self.migrated}, since_start={current_time - self.start_time}, engine_unfinished_reqs={engine_unfinished_reqs}, request_mapping_len={len(request_mapping)}")
-            if sum(engine_unfinished_reqs) <= len(self.dest_workers) * self.batch_size:
+            if len(request_mapping) > 0 and sum(engine_unfinished_reqs) <= len(self.dest_workers) * self.batch_size:
                 per_worker_reqs = self._aggregate_reqs(request_mapping)
-                src_list = list(range(len(get_worker_stat_fns)))
+                src_list = [i for i in range(len(get_worker_stat_fns)) if i in per_worker_reqs]
                 for worker in self.dest_workers:
-                    assert worker in src_list
+                    if worker not in src_list:
+                        # Madoka: if the dest worker is not available, just do nothing...
+                        self.migrated = True
+                        return {}
                     src_list.remove(worker)
                 migration_plan = {}
                 for dest in self.dest_workers:
