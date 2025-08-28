@@ -16,11 +16,6 @@ class ResourceManager:
             `da_2_num_gpus_per_node`: {device_affinity: num_gpus_per_node},
             `da_2_num_nodes`: {device_affinity: num_nodes}.
         """
-        # TODO: Lunxi: We can not match the order of device affinities of following dicts with the actual order
-        # of device types when calling ray.util.placement_group, so we temporarily adjust the order mannually.
-        da_2_num_gpus_per_node = {k: da_2_num_gpus_per_node[k] for k in sorted(da_2_num_gpus_per_node, reverse=True)}
-        da_2_num_nodes = {k: da_2_num_nodes[k] for k in sorted(da_2_num_nodes, reverse=True)}
-
         assert da_2_num_gpus_per_node.keys() == da_2_num_nodes.keys()
         available_resources = ray.available_resources()
         available_gpu = available_resources.get("GPU", 0)
@@ -54,19 +49,39 @@ class ResourceManager:
         self.da_2_node_ranks: Dict[str, List[int]] = {}
         self.da_2_gpu_ranks: Dict[str, List[int]] = {}
         self.da_2_node2pg: Dict[str, Dict[int, PlacementGroup]] = {}
+
+        # NOTE: Lunxi: We call ray.util.placement_group with all bundles whose 'GPU' are set to 8,
+        # no matter what the `gpu_per_node` of this device affinity is.
+        # But we only use `gpu_per_node` GPUs among totally 8 ones.
+
+        # First, we create all placement groups.
+        bundles = []
+        for da in self.da_2_num_nodes:
+            for i in range(self.da_2_num_nodes[da]):
+                node = da_2_nodes_maybe_used[da][i]
+                node_cpu = int(node["Resources"]["CPU"])
+                bundles.append({"GPU": 8, "CPU": max(32, 1)})
+        all_pgs = [ray.util.placement_group([bundle]) for bundle in bundles]
+        ray.get([pg.ready() for pg in all_pgs])
+
+        # Then we distribute them by matching their gpu types with the corresponding device affinities.
+        gpu_types = ray.get(
+            [
+                get_device_type.options(placement_group=pg, num_gpus=8).remote()
+                for pg in all_pgs
+            ]
+        )
+        for pg, gpu_type in zip(all_pgs, gpu_types):
+            assert gpu_type in self.da_2_num_nodes
+            if gpu_type not in self.da_2_placement_groups:
+                self.da_2_placement_groups[gpu_type] = []
+            self.da_2_placement_groups[gpu_type].append(pg)
+
         for da in self.da_2_num_nodes:
             if self.da_2_gpu_per_node[da] > 0:
                 assert self.da_2_num_gpus[da] <= available_gpu, f"[{da}] num_gpus {self.da_2_num_gpus[da]} > available_gpu {available_gpu}"
                 available_gpu -= self.da_2_num_gpus[da]
 
-                bundles = []
-                for i in range(self.da_2_num_nodes[da]):
-                    node = da_2_nodes_maybe_used[da][i]
-                    node_cpu = int(node["Resources"]["CPU"])
-                    bundles.append({"GPU": self.da_2_gpu_per_node[da], "CPU": max(32, 1)})
-
-                self.da_2_placement_groups[da] = [ray.util.placement_group([bundle]) for bundle in bundles]
-                ray.get([pg.ready() for pg in self.da_2_placement_groups[da]])
                 gpu_ranks = ray.get(
                     [
                         get_visible_gpus.options(placement_group=pg, num_gpus=self.da_2_gpu_per_node[da]).remote()
@@ -74,17 +89,8 @@ class ResourceManager:
                     ]
                 )
 
-                gpu_types = ray.get(
-                    [
-                        get_device_type.options(placement_group=pg, num_gpus=self.da_2_gpu_per_node[da]).remote()
-                        for pg in self.da_2_placement_groups[da]
-                    ]
-                )
                 print(f"***** [{da}] gpu ranks: {gpu_ranks} *****")
                 self.da_2_node_ranks[da] = list(range(len(self.da_2_placement_groups[da])))
-                for node_rank in self.da_2_node_ranks[da]:
-                    assert gpu_types[node_rank] == da, f"***** node_rank: {node_rank}, gpu_type: {gpu_types[node_rank]}, da: {da}, node_ranks: {self.da_2_node_ranks[da]}, gpu_types: {gpu_types} *****"
-
                 self.da_2_gpu_ranks[da] = [int(gpu_rank[0]) for gpu_rank in gpu_ranks]
                 self.da_2_node2pg[da] = {}
                 for node_rank, placement_group in zip(self.da_2_node_ranks[da], self.da_2_placement_groups[da]):
