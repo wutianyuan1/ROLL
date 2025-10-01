@@ -116,9 +116,10 @@ class Cluster:
                                      if self.worker_config.device_affinity in self.resource_manager.da_2_gpu_per_node \
                                      else 0),
                 "USE_MODELSCOPE": os.environ.get("USE_MODELSCOPE", "0"),
-                "NCCL_SOCKET_IFNAME": os.environ.get("NCCL_SOCKET_IFNAME", "eth0"),
                 "DEVICE_AFFINITY": str(self.worker_config.device_affinity),
             }
+            if os.environ.get("NCCL_SOCKET_IFNAME") is not None:
+                env_vars["NCCL_SOCKET_IFNAME"] = os.environ.get("NCCL_SOCKET_IFNAME"),
 
             if rank != 0:
                 env_vars["MASTER_ADDR"] = self.master_addr

@@ -26,7 +26,7 @@ from megatron.core.transformer.moe.legacy_a2a_token_dispatcher import MoEAlltoAl
 from megatron.core.transformer.moe.moe_layer import MoELayer
 from megatron.core.transformer.moe.token_dispatcher import MoEAlltoAllTokenDispatcher, MoEAllGatherTokenDispatcher, \
     MoETokenDispatcher
-from megatron.core.utils import is_float8tensor
+from megatron.core.fp8_utils import is_float8tensor
 from torch import Tensor
 
 from roll.utils.offload_states import move_tensors_to_device_buffer, move_device_buffer_to_tensors

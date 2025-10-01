@@ -75,12 +75,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
                      max_gen_gpus: int = 1,
                      max_train_gpus: int = 1):
         self.master_addr = os.environ.get("MASTER_ADDR", "localhost")
+        self.scheduler_addr = os.environ.get("SCHEDULER_ADDR", "localhost")
         self.scheduler_port = int(os.environ.get("SCHEDULER_PORT", 9969))
         self.check_interval = 0.2
         self.step_counter = Counter()
         try:
             self.shared_storage = StrictRedis(
-                host=self.master_addr,
+                host=self.scheduler_addr,
                 port=self.scheduler_port,
                 db=0,
                 decode_responses=True

@@ -110,7 +110,7 @@ class Scheduler:
         self.msg_channel = self.shared_storage.pubsub()
         self.msg_channel.subscribe("tenant_events")
         self.msg_channel.listen()
-        self.resource_manager = ResourceManager(gen_device_affinity='NVIDIA H20', gen_device_ids=list(range(0, 4)), train_device_affinity='NVIDIA L20X', train_device_ids=list(range(0, 8)))
+        self.resource_manager = ResourceManager(gen_device_affinity='NVIDIA H800', gen_device_ids=list(range(0, 4)), train_device_affinity='NVIDIA H800', train_device_ids=list(range(4, 8)))
         self.ready_queue = []
         self.lock = threading.Lock()
         self.select_policy = policy
@@ -234,7 +234,7 @@ if __name__ == '__main__':
     master_addr = os.environ.get("MASTER_ADDR", "localhost")
     scheduler_port = int(os.environ.get("SCHEDULER_PORT", "9969"))
     redis_server_proc = subprocess.Popen(
-        f"redis-server --bind {master_addr} --port {scheduler_port} --save \"\"",
+        f"redis-server --bind {master_addr} --port {scheduler_port} --protected-mode no --save \"\"",
         shell=True
     )
     shared_storage = redis.StrictRedis(

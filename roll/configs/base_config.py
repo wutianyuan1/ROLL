@@ -222,7 +222,7 @@ class BaseConfig:
                         self.da_2_num_gpus_per_node[da] = num_gpus_per_node
                     assert self.da_2_num_gpus_per_node[da] == num_gpus_per_node
                     da_2_total_devices[da].extend(attribute.device_mapping)
-
+        da_2_total_devices = {da: list(set(da_2_total_devices[da])) for da in da_2_total_devices}
         assert da_2_total_devices.keys() == self.da_2_num_gpus_per_node.keys()
         # +1 when counting GPUs because device_mapping is the indices.
         max_gpu_nums = {device_affinity: max(devices) + 1 for device_affinity, devices in da_2_total_devices.items()}

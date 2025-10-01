@@ -56,19 +56,21 @@ class ResourceManager:
 
         # First, we create all placement groups.
         bundles = []
+        num_gpus_per_pg = []
         for da in self.da_2_num_nodes:
             for i in range(self.da_2_num_nodes[da]):
                 node = da_2_nodes_maybe_used[da][i]
                 node_cpu = int(node["Resources"]["CPU"])
-                bundles.append({"GPU": 8, "CPU": max(32, 1)})
+                bundles.append({"GPU": self.da_2_gpu_per_node[da], "CPU": max(32, 1)})
+                num_gpus_per_pg.append(self.da_2_gpu_per_node[da])
         all_pgs = [ray.util.placement_group([bundle]) for bundle in bundles]
         ray.get([pg.ready() for pg in all_pgs])
 
         # Then we distribute them by matching their gpu types with the corresponding device affinities.
         gpu_types = ray.get(
             [
-                get_device_type.options(placement_group=pg, num_gpus=8).remote()
-                for pg in all_pgs
+                get_device_type.options(placement_group=pg, num_gpus=num_gpus).remote()
+                for num_gpus, pg in zip(num_gpus_per_pg, all_pgs)
             ]
         )
         for pg, gpu_type in zip(all_pgs, gpu_types):
