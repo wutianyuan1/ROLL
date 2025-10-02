@@ -718,6 +718,8 @@ def postprocess_generate(
     eos_token_id,
     pad_token_id,
     fill_eos_token=False,
+    output_logprobs: Optional[list[list[float]]]=None,
+    pad_to_seq_len=True,
 ) -> "DataProto":
     from roll.distributed.scheduler.protocol import DataProto
 
@@ -737,9 +739,10 @@ def postprocess_generate(
     input_batch_size = input_ids.size(0)
     prompt_length = input_ids.size(1)
 
-    output = pad_to_length(output, sequence_length, pad_token_id)
-
-    assert output.shape[1] == sequence_length, f"output shape {output.shape} != {sequence_length}"
+    if pad_to_seq_len:
+        output = pad_to_length(output, sequence_length, pad_token_id)
+        assert output.shape[1] == sequence_length, f"output shape {output.shape} != {sequence_length}"
+    sequence_length = output.shape[1]
 
     prompt = output[:, :prompt_length].clone()  # (bs, prompt_length)
     response = output[:, prompt_length:].clone()  # (bs, response_length)
@@ -768,6 +771,7 @@ def postprocess_generate(
     assert attention_mask.any(dim=1).all(), f"has all 0 attention_mask, {attention_mask} {input_ids}"
     first_one = attention_mask.float().argmax(dim=1)
     new_response_mask = torch.zeros_like(attention_mask)  # response mask for cat input_ids
+    logprobs = torch.zeros([output_batch_size, sequence_length - 1], dtype=torch.float32) if output_logprobs is not None else None
     for i in range(output_batch_size):
         shift = first_one[i].item()
         if shift > 0:
@@ -778,10 +782,24 @@ def postprocess_generate(
         response_length = response_mask[i].sum().int().item()
         attention_mask[i][:valid_length] = 1
         attention_mask[i][valid_length:] = 0
-        new_response_mask[i][valid_length - response_length : valid_length] = 1
-        if position_ids.dim() == 3:
+        prompt_len = valid_length - response_length
+        new_response_mask[i][prompt_len : valid_length] = 1
+        if logprobs is not None:
+            logprobs[i][prompt_len - 1 : valid_length - 1] = torch.tensor(
+                output_logprobs[i][:response_length], dtype=logprobs.dtype
+            )
+        if position_ids.dim() == 3 and shift > 0:
             # shift as output to convert to right padding
+            # NOTE: left shift without clear right might lead to unclean values
+            # in right part, which especially is the case when using long prompt
+            # length and short response length. This usually makes no effect if
+            # mask is right, while it might make trouble to for multi-modal model
+            # like Qwen2-vl, since extra image_token would be left which might
+            # cause error: Image features and image tokens do not match
             output_position_ids[i, ..., :-shift] = output_position_ids[i, ..., shift:].clone()
+            # only clean in VLM(qwen2-vl) to make no effect on LLM
+            if prompt_length > response_length:
+                output[i, -shift:] = pad_token_id
 
     prompt_mask = (attention_mask == 1) & (new_response_mask == 0)
     if position_ids.dim() == 3:
@@ -805,6 +823,8 @@ def postprocess_generate(
             prompt_id.squeeze().unsqueeze(1).repeat(1, num_return_sequences).view(output_batch_size, -1).squeeze(-1)
         )
         batch["prompt_id"] = prompt_id
+    if logprobs is not None:
+        batch["infer_logprobs"] = logprobs
     return DataProto(batch=batch)
 
 

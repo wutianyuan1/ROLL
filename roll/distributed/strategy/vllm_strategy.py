@@ -156,8 +156,7 @@ class VllmStrategy(InferenceStrategy):
         migrated_resps: List[RequestOutput] = []
         normal_reqs: List[RequestOutput] = []
         for output_request in vllm_outputs:
-            if "_" in output_request.request_id:
-                assert len(output_request.request_id.split("_")) == 3
+            if "_" in output_request.request_id and output_request.request_id.count("_") == 3:
                 assert len(output_request.outputs) == 1, "Migrated response should have only one output."
                 migrated_resps.append(output_request)
             else:

@@ -21,14 +21,14 @@ from roll.utils.logging import get_logger
 
 logger = get_logger()
 
-rank = get_driver_rank()
-world_size = get_driver_world_size()
-master_addr = get_driver_master_addr()
-master_port = get_driver_master_port()
-node_name = get_driver_node_name()
-
 
 def start_ray_cluster():
+    rank = get_driver_rank()
+    world_size = get_driver_world_size()
+    master_addr = get_driver_master_addr()
+    master_port = get_driver_master_port()
+    node_name = get_driver_node_name()
+
     if is_ray_cluster_running() or os.environ.get("USE_EXISTING_RAY_CLUSTER") is not None:
         logger.info("Ray cluster already initialized")
         return False

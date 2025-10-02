@@ -7,6 +7,8 @@ import time
 import array
 import os
 import redis
+import asyncio
+import uuid
 from collections import defaultdict
 from typing import Any, Union, Optional, Dict, List, Set
 
@@ -950,32 +952,40 @@ class GlobalCounter:
         return self.value
 
 
-@ray.remote(concurrency_groups={"single_thread": 1, "multi_thread": 256})
-class OneRequestScheduler:
-    def __init__(self, infer_worker, pipeline_config):
-        self.infer_worker = infer_worker
+@ray.remote
+class RequestScheduler:
+    def __init__(self, infer_cluster, pipeline_config):
+        self.infer_cluster = infer_cluster
         self.pipeline_config = pipeline_config
-        self.request_counter = GlobalCounter.options(
-            name=f"SimpleRequestSchedulerRequestCounter",
-            get_if_exists=True,
-            namespace=RAY_NAMESPACE,
-        ).remote()
-        self.request_2_response = ThreadSafeDict()
-        self.request_id = None
-        self.event = threading.Event()
+        self.request_id = uuid.uuid4()
+        self.request_counter = 0
+        self.src_rank2_dp_rank = {}
+        self.request_id_2_dp_rank = {}
+        self.inflight_requests: List[Dict[str, asyncio.Future]] = [{} for _ in range(self.infer_cluster.world_size)]
+        self.worker_iter = itertools.cycle(range(self.infer_cluster.world_size))
 
-    def generate_one_request(self, data: DataProto):
+        self.need_suspend = False
+        self.suspend_notifier = asyncio.Event()
 
-        request_id = str(ray.get(self.request_counter.get_value.remote()))
+    async def generate_one_request(self, data: DataProto):
+        await self._check_suspend()
+
+        src_rank = data.meta_info["src_rank"]
+        if src_rank not in self.src_rank2_dp_rank:
+            dp_rank = next(self.worker_iter)
+            self.src_rank2_dp_rank[src_rank] = dp_rank
+        dp_rank = self.src_rank2_dp_rank[src_rank]
+        request_id = f"{self.request_id}_{self.request_counter}"
+        self.request_counter += 1
         data.meta_info["request_id"] = request_id
-        self.request_id = request_id
-        ray.get(self.infer_worker.add_request.remote(command=GenerateRequestType.ADD, data=data))
-
-        self.event.wait()
-
-        response_data = self.request_2_response[request_id]
-
+        fut = asyncio.Future()
+        self.request_id_2_dp_rank[request_id] = dp_rank
+        self.inflight_requests[dp_rank][request_id] = fut
+        ref = self.infer_cluster.workers[dp_rank].add_request.remote(command=GenerateRequestType.ADD, data=data)
+        await asyncio.wrap_future(ref.future())
+        response_data = await fut
         if response_data is None:
+            # request aborted
             return None
 
         # postprocess_generate, input_ids, attention_mask, left pad
@@ -994,25 +1004,53 @@ class OneRequestScheduler:
             sequence_length=output_tensor.shape[-1],
             eos_token_id=eos_token_id,
             pad_token_id=pad_token_id,
+            pad_to_seq_len=data.meta_info.get("pad_to_seq_len", True),
         )
         request_repeat = data.repeat(repeat_times=len(output_tokens))
         output.non_tensor_batch = request_repeat.non_tensor_batch
         output.meta_info = request_repeat.meta_info
-        self.request_2_response.clear()
         return output
 
-    @ray.method(concurrency_group="multi_thread")
-    def report_response(self, data: DataProto):
-        self.request_2_response[data.meta_info["request_id"]] = data
-        self.event.set()
+    async def report_response(self, data: DataProto, is_abort=False):
+        request_id = data.meta_info["request_id"]
+        if request_id not in self.request_id_2_dp_rank:
+            return
+        dp_rank = self.request_id_2_dp_rank.pop(request_id)
+        fut = self.inflight_requests[dp_rank].pop(request_id)
+        if is_abort:
+            fut.set_result(None)
+        else:
+            fut.set_result(data)
 
-    @ray.method(concurrency_group="multi_thread")
-    def abort_request(self, data: DataProto):
-        if self.request_id is not None:
-            ray.get(
-                self.infer_worker.add_request.remote(
-                    command=GenerateRequestType.ABORT, data=DataProto(meta_info={"request_id": self.request_id})
+    async def abort_request(self):
+        futures = []
+        for i in range(self.infer_cluster.world_size):
+            if len(self.inflight_requests[i]) == 0:
+                continue
+            ref = self.infer_cluster.workers[i].add_request.remote(
+                    command=GenerateRequestType.ABORT, data=DataProto(
+                        meta_info={"request_id": [request_id for request_id in self.inflight_requests[i].keys()]}
+                    )
                 )
-            )
-            self.request_2_response[self.request_id] = None
-            self.event.set()
+            futures.append(ref)
+            for request_id in self.inflight_requests[i].keys():
+                futures.append(self.report_response(data=DataProto(meta_info={"request_id": request_id}), is_abort=True))
+        # must await at last, because report_response will mut inflight_requests
+        await asyncio.gather(*futures)
+
+    async def _check_suspend(self):
+        while self.need_suspend:
+            await self.suspend_notifier.wait()
+
+    async def suspend(self):
+        if self.need_suspend:
+            return
+        self.suspend_notifier.clear()
+        self.need_suspend = True
+        await self.abort_request()
+
+    def resume(self):
+        if not self.need_suspend:
+            return
+        self.need_suspend = False
+        self.suspend_notifier.set()

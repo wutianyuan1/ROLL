@@ -177,3 +177,4 @@ run_sbatch.sh
 models/
 output/
 file_sync.sh
+qwen3*

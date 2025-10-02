@@ -54,6 +54,10 @@ class BaseConfig:
         default="./output",
         metadata={"help": "The output directory where the model predictions and checkpoints will be written."},
     )
+    base_dir: str = field(
+        default="./output",
+        metadata={"help": "The base directory where the model predictions and checkpoints will be written."},
+    )
     logging_dir: str = field(
         default="./output/logs",
         metadata={"help": "Directory to store logs."})
@@ -87,6 +91,13 @@ class BaseConfig:
     val_batch_size: int = field(
         default=128,
         metadata={"help": "The number of samples to rollout in each val batch."})
+    async_generation_ratio: float = field(
+        default=0,
+        metadata={
+            "help": "The ratio of ahead generation requests in pipeline, "
+            "0 means synchronous pipeline. currently only integer is supported."
+        },
+    )
     local_rank: int = field(
         default=-1,
         metadata={"help": "Local rank for distributed training; set to -1 if not applicable."}

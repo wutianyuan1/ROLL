@@ -23,7 +23,7 @@ global_template: longCOT_qwen2.5
 
 rollout_batch_size: 32  # prompt
 prompt_length: 2048
-response_length: 2048
+response_length: 4096
 
 num_return_sequences_in_group: 8
 ppo_epochs: 1
@@ -137,7 +137,7 @@ actor_infer:
     strategy_config:
       gpu_memory_utilization: 0.7
       block_size: 16
-      max_model_len: 2048
+      max_model_len: 4096
   device_mapping: list(range(0,4))
   device_affinity: 'NVIDIA H800'
   num_gpus_per_node: 4
