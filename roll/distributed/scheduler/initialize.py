@@ -29,7 +29,7 @@ node_name = get_driver_node_name()
 
 
 def start_ray_cluster():
-    if is_ray_cluster_running():
+    if is_ray_cluster_running() or os.environ.get("USE_EXISTING_RAY_CLUSTER") is not None:
         logger.info("Ray cluster already initialized")
         return False
 
