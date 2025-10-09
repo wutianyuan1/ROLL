@@ -20,8 +20,8 @@ struct Job {
 };
 
 struct SimulationResult {
-    std::unordered_map<std::string, std::vector<std::pair<double, double>>> rollout_busy_times;
-    std::unordered_map<std::string, std::vector<std::pair<double, double>>> train_busy_times;
+    std::unordered_map<std::string, std::unordered_map<std::string, std::vector<std::pair<double, double>>>> rollout_busy_times;
+    std::unordered_map<std::string, std::unordered_map<std::string, std::vector<std::pair<double, double>>>> train_busy_times;
     std::vector<double> rollout_utils;
     std::vector<double> train_utils;
 };

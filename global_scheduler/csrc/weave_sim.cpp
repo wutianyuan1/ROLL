@@ -167,8 +167,7 @@ SimulationResult WeaveSimulator::simulate_run(int n_meta_iters) {
         result.train_utils.push_back(calculate_utilization(all_intervals));
     }
     
-    // Flatten the busy times for return (optional, if needed)
-    // This could be optimized if you don't need the detailed busy times
-    
+    result.rollout_busy_times = rollout_busy_times;
+    result.train_busy_times = train_busy_times;
     return result;
 }

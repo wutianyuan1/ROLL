@@ -1,9 +1,16 @@
+import sys
+import os
+import logging
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import seaborn as sns
 from typing import List, Optional, Dict, Tuple
 from global_scheduler.structs import Job
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+build_dir = os.path.join(current_dir, 'build')
+sys.path.insert(0, build_dir)
 
 
 class WeaveSimulator:
@@ -16,6 +23,28 @@ class WeaveSimulator:
         self.all_rollout_nodes = list(set([node for job in self.jobs for node in job.rollout_nodes]))
         self.all_train_nodes = list(set([node for job in self.jobs for node in job.train_nodes]))
 
+        # Convert to cpp objects if the cpp backend is available
+        try:
+            # raise ValueError()
+            import global_scheduler_cpp
+            cpp_jobs = []
+            for job in jobs:
+                cpp_job = global_scheduler_cpp.Job(
+                    job.job_id,
+                    job.t_rollout,
+                    job.t_train,
+                    job.rollout_nodes,
+                    job.train_nodes
+                )
+                cpp_jobs.append(cpp_job)
+            self.cpp_simulator = global_scheduler_cpp.WeaveSimulator(
+                cpp_jobs, self.meta_iter_cycle
+            )
+            logging.info("[Simulator] Using C++ backend...")
+        except:
+            self.cpp_simulator = None
+            logging.warining("[Simulator] C++ backend is not available, fallback to native python backend.")
+
     def sim_based_util(self, busy_times: Dict[str, List[Tuple[float, float]]]):
         max_t, min_t = 0, float("inf")
         busy_t = 0
@@ -27,6 +56,14 @@ class WeaveSimulator:
         return busy_t / (max_t - min_t)
 
     def simulate_run(self, n_meta_iters: int):
+        if self.cpp_simulator is not None:
+            result = self.cpp_simulator.simulate_run(n_meta_iters)
+            utils = {
+                'rollout': [round(util, 4) for util in result.rollout_utils],
+                'train': [round(util, 4) for util in result.train_utils]
+            }
+            return result.rollout_busy_times, result.train_busy_times, utils
+        # Else, fallback to python simulator
         # Busy times, key: cluster, value: Dict[job_id -> List[(t_start_i, t_end_i)]]
         rollout_busy_times = {rollout_node: {} for rollout_node in self.all_rollout_nodes}
         train_busy_times = {train_node: {} for train_node in self.all_train_nodes}
@@ -82,15 +119,21 @@ class WeaveSimulator:
                     train_busy_times[node].setdefault(job.job_id, []).append(
                         (t_train_begin, t_train_begin + job.t_train)
                     )
-        
+
+        utils = {'rollout': [], 'train': []}
         for cluster in rollout_busy_times:
-            print(f"Rollout[{cluster}].util = {self.sim_based_util(rollout_busy_times[cluster]) * 100:.2f}%")
+            util = self.sim_based_util(rollout_busy_times[cluster])
+            # print(f"Rollout[{cluster}].util = {util * 100:.2f}%")
+            utils['rollout'].append(round(util, 4))
         for cluster in train_busy_times:
-            print(f"Train[{cluster}].util = {self.sim_based_util(train_busy_times[cluster]) * 100:.2f}%")
-        return rollout_busy_times, train_busy_times
+            util = self.sim_based_util(train_busy_times[cluster])
+            # print(f"Train[{cluster}].util = {util * 100:.2f}%")
+            utils['train'].append(round(util, 4))
+        return rollout_busy_times, train_busy_times, utils
 
     def plot(self, n_meta_iters: int, export_path: Optional[str] = None):
-        rollout_busy_times, train_busy_times = self.simulate_run(n_meta_iters)
+        rollout_busy_times, train_busy_times, _ = self.simulate_run(n_meta_iters)
+        print(rollout_busy_times, train_busy_times)
         colors = sns.color_palette("Set3")
         jobid_2_colors = {job.job_id: color for (job, color) in zip(self.jobs, colors)}
         ax = plt.gca()
