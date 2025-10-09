@@ -133,7 +133,6 @@ class WeaveSimulator:
 
     def plot(self, n_meta_iters: int, export_path: Optional[str] = None):
         rollout_busy_times, train_busy_times, _ = self.simulate_run(n_meta_iters)
-        print(rollout_busy_times, train_busy_times)
         colors = sns.color_palette("Set3")
         jobid_2_colors = {job.job_id: color for (job, color) in zip(self.jobs, colors)}
         ax = plt.gca()
