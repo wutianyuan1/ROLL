@@ -86,9 +86,9 @@ actor_train:
       expert_model_parallel_size: 1
       use_distributed_optimizer: true
       recompute_granularity: full
-  device_mapping: list(range(4,8))
-  device_affinity: 'NVIDIA H800'
-  num_gpus_per_node: 4
+  device_mapping: list(range(0,8))
+  device_affinity: 'NVIDIA L20X'
+  num_gpus_per_node: 8
   infer_batch_size: 2
 
 actor_infer:
@@ -109,9 +109,9 @@ actor_infer:
       enforce_eager: true
       block_size: 16
       load_format: auto
-  device_mapping: list(range(0,4))
-  device_affinity: 'NVIDIA H800'
-  num_gpus_per_node: 4
+  device_mapping: list(range(0,8))
+  device_affinity: 'NVIDIA H20'
+  num_gpus_per_node: 8
 
 reference:
   model_args:
@@ -122,10 +122,10 @@ reference:
   strategy_args:
     strategy_name: hf_infer
     strategy_config: ~
-  device_mapping: list(range(4,8))
+  device_mapping: list(range(0,8))
   infer_batch_size: 2
-  device_affinity: 'NVIDIA H800'
-  num_gpus_per_node: 4
+  device_affinity: 'NVIDIA L20X'
+  num_gpus_per_node: 8
 
 reward_normalization:
   grouping: batch # 可以tags(env_type)/traj_group_id(group)/batch(rollout_batch)... group_by计算reward/adv
