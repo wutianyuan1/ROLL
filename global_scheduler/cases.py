@@ -17,21 +17,21 @@ plt.figure(figsize=(12, 3))
 # simulator = WeaveSimulator([job_A, job_B, job_C], ['A', 'B', 'C'])
 
 # Case-3
-# job_A = Job('A', 2, 1, ['RN-1'], ['TN'])
-# job_B = Job('B', 2, 1, ['RN-2], ['TN'])
-# job_C = Job('C', 2, 1, ['RN-3'], ['TN'])
+# job_A = Job('A', 2.5, 1, ['RN-1'], ['TN'])
+# job_B = Job('B', 2.5, 1, ['RN-2'], ['TN'])
+# job_C = Job('C', 2.5, 1, ['RN-3'], ['TN'])
 # simulator = WeaveSimulator([job_A, job_B, job_C], ['A', 'B', 'C'])
 
 # Case-4
-# job_A = Job('A', 5, 1, ['RN-1'], ['TN'])
-# job_B = Job('B', 2, 1, ['RN-2'], ['TN'])
-# job_C = Job('C', 2, 1, ['RN-3'], ['TN'])
+# job_A = Job('A', 6, 1, ['RN-1'], ['TN'])
+# job_B = Job('B', 2.5, 1, ['RN-2'], ['TN'])
+# job_C = Job('C', 2.5, 1, ['RN-3'], ['TN'])
 # simulator = WeaveSimulator([job_A, job_B, job_C], ['A', 'B', 'C', 'B', 'C'])
 
 # Case-5
-job_A = Job('A', 3, 3, ['RN-1', 'RN-2', 'RN-3'], ['TN'])
-job_B = Job('B', 3, 1, ['RN-1'], ['TN'])
-job_C = Job('C', 3, 1, ['RN-2'], ['TN'])
-job_D = Job('D', 3, 1, ['RN-3'], ['TN'])
-simulator = WeaveSimulator([job_A, job_B, job_C, job_D], ['A', 'B', 'C', 'D'])
+job_A = Job('A', 2.5, 2.5, ['RN-1', 'RN-2'], ['TN'])
+job_B = Job('B', 2.5, 1, ['RN-1'], ['TN'])
+job_C = Job('C', 2.5, 1, ['RN-2'], ['TN'])
+simulator = WeaveSimulator([job_A, job_B, job_C], ['A', 'B', 'C'])
+print(simulator.simulate_run(10)[-1])
 simulator.plot(10, "global_scheduler/sim.png")
