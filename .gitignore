@@ -177,3 +177,4 @@ run_sbatch.sh
 models/
 output/
 file_sync.sh
+global_scheduler/figs

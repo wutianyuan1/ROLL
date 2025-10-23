@@ -2,12 +2,13 @@ from typing import List, Optional
 
 
 class Job:
-    def __init__(self, job_id: str, t_rollout: float, t_train: float,
+    def __init__(self, job_id: str, t_rollout: float, t_train: float, slo: float = None,
                  rollout_nodes: Optional[List[str]] = None,
                  train_nodes: Optional[List[str]] = None):
         self.job_id = job_id
         self.t_rollout = t_rollout
         self.t_train = t_train
+        self.slo = slo
         # We simplify the condition here (avoid early-starting)
         # A job's rollout/train can start iff all its required 
         # rollout/train nodes are available.

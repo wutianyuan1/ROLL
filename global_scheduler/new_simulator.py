@@ -209,10 +209,10 @@ class WeaveSimulator:
             utils["rollout"] = [0.0] * len(self.all_rollout_nodes)
             utils["train"] = [0.0] * len(self.all_train_nodes)
 
-        return cleaned_rollout_busy_times, cleaned_train_busy_times, utils
+        return cleaned_rollout_busy_times, cleaned_train_busy_times, utils, total_time
 
     def plot(self, n_meta_iters: int, export_path: Optional[str] = None):
-        rollout_busy_times, train_busy_times, _ = self.simulate_run(n_meta_iters)
+        rollout_busy_times, train_busy_times, _, _ = self.simulate_run(n_meta_iters)
         colors = sns.color_palette("Set3")
         jobid_2_colors = {job.job_id: color for (job, color) in zip(self.jobs_map.values(), colors)}
         ax = plt.gca()

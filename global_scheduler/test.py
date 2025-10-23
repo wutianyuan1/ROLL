@@ -1,40 +1,25 @@
 import time
 import os
 import sys
-from global_scheduler.brute_force_solver import IntraGroupSolver
-from global_scheduler.simulator import WeaveSimulator
-from global_scheduler.weave_scheduler import WeaveScheduler
+import random
+from global_scheduler.brute_force_solver_new import BruteForceSolver
+from global_scheduler.weave_scheduler import WeaveScheduler, per_time_cost
 from global_scheduler.structs import Job
 
 
-def cost_based_score(utils):
-    rollout_waste = [1 - i for i in utils['rollout']]
-    train_waste = [1 - i for i in utils['train']]
-    return -1 * (sum(rollout_waste) * 0.3 + sum(train_waste))
 
-
-def test_solver():
-    job_A = Job('A', 5, 5)
-    job_B = Job('B', 5, 2.5)
-    job_C = Job('C', 5, 2.5)
-    jobs = [job_A, job_B, job_C]
-    t1 = time.time()
-    igs = IntraGroupSolver(jobs, sim_steps=1000)
-    score, strategy = igs.solve(5, cost_based_score)
-    t2 = time.time()
-    print(f"Time to solve = {t2 - t1}")
-    partition, deploy_jobs, meta_iter = strategy
-    sim = WeaveSimulator(deploy_jobs, meta_iter)
-    sim.plot(10, "global_scheduler/best.png")
-
-
-def test_scheduler():
-    sched = WeaveScheduler(cost_based_score, 1.0)
-    job_seq = [Job("A", 5, 5), Job("B", 5, 5), Job("C", 5, 5)]
+def test_scheduler(n_jobs, max_group_size):
+    sched = WeaveScheduler(per_time_cost, max_group_size)
+    job_seq = [Job(str(i), random.randint(10, 20), random.randint(10, 20), slo=1.2) for i in range(n_jobs)]
     for job in job_seq:
         print(f"\n======== Insert Job {job.job_id} ========")
         print(sched.add_job(job))
+    print("!!!", sched.group_costs, sum(sched.group_costs.values()))
+    solver = BruteForceSolver(job_seq, max_group_size)
+    ret = solver.solve()
+    print(ret)
 
 
 if __name__ == "__main__":
-    test_scheduler()
+    random.seed(2345)
+    test_scheduler(n_jobs=10, max_group_size=3)
