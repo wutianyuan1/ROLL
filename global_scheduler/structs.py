@@ -23,6 +23,11 @@ class JobGroup:
     def __init__(self, group_id: str, jobs: List[Job]):
         self.group_id = group_id
         self.jobs = jobs
+        self.last_rollout_node_id = 0
+
+    def next_rollout_node_id(self) -> str:
+        self.last_rollout_node_id += 1
+        return str(self.last_rollout_node_id)
 
     def __repr__(self):
         return self.group_id
