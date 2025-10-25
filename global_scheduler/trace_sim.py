@@ -10,6 +10,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 from global_scheduler.brute_force_solver_new import BruteForceSolver
 from global_scheduler.weave_scheduler import WeaveScheduler, per_time_cost
+from global_scheduler.baselines import BaselineScheduler, RandomScheduler
 from global_scheduler.structs import Job
 
 
@@ -30,73 +31,112 @@ def read_trace(trace_fn):
     for line in content:
         if len(line) <= 1:
             continue
-        jid, t, event = line.split(', ')
-        t = datetime.strptime(t, '%Y-%m-%d %H:%M:%S')
-        traces.append([jid.strip("application_"), t, int(event)])
+        items = line.split(', ')
+        if len(items) == 3:
+            jid, t, event = items
+            t = datetime.strptime(t, '%Y-%m-%d %H:%M:%S')
+            traces.append([jid.strip("application_"), t, int(event)])
+        else:
+            assert len(items) == 6  # + t_roll, t_train, slo
+            jid, t, event, t_roll, t_train, slo = items
+            t = datetime.strptime(t, '%Y-%m-%d %H:%M:%S')
+            traces.append([jid.strip("application_"), t, int(event), float(t_roll), float(t_train), float(slo)])
     return traces
 
 
-def compute_opt_cost(jobs_list, max_group_size):
-    solver = BruteForceSolver(jobs_list, max_group_size)
+def generate_jobs(trace, slo_func, export_fn_prefix: str):
+    ### Similar rollout-train
+    small_unif_job_gen  = JobGenerator(lambda: random.uniform(50, 100), lambda: random.uniform(50, 100), slo_func)
+    mid_unif_job_gen    = JobGenerator(lambda: random.uniform(100, 200), lambda: random.uniform(100, 200), slo_func)
+    large_unif_job_gen  = JobGenerator(lambda: random.uniform(200, 300), lambda: random.uniform(200, 300), slo_func)
+    ### Train heavy (TH)
+    small_th_job_gen  = JobGenerator(lambda: random.uniform(25, 50), lambda: random.uniform(100, 200), slo_func)
+    mid_th_job_gen    = JobGenerator(lambda: random.uniform(50, 100), lambda: random.uniform(200, 400), slo_func)
+    large_th_job_gen  = JobGenerator(lambda: random.uniform(100, 200), lambda: random.uniform(400, 600), slo_func)
+    ### Rollout heavy (RH)
+    small_rh_job_gen  = JobGenerator(lambda: random.uniform(100, 200), lambda: random.uniform(25, 50), slo_func)
+    mid_rh_job_gen    = JobGenerator(lambda: random.uniform(200, 400), lambda: random.uniform(50, 100), slo_func)
+    large_rh_job_gen  = JobGenerator(lambda: random.uniform(400, 600), lambda: random.uniform(100, 200), slo_func)
+
+    # Try to mix these jobs
+    mixed_generators = {
+        'uni': [small_unif_job_gen, mid_unif_job_gen, large_unif_job_gen],
+        'rh':  [small_rh_job_gen, mid_rh_job_gen, large_rh_job_gen],
+        'th':  [small_th_job_gen, mid_th_job_gen, large_th_job_gen],
+        'all': [small_unif_job_gen, mid_unif_job_gen, large_unif_job_gen,
+                small_rh_job_gen, mid_rh_job_gen, large_rh_job_gen,
+                small_th_job_gen, mid_th_job_gen, large_th_job_gen],
+    }
+
+    trace_list= read_trace(trace)
+    for mix_type in mixed_generators:
+        job_generators = mixed_generators[mix_type]
+        with open(f"{export_fn_prefix}_{mix_type}.trace", 'w') as f:
+            for i, (jid, t, event) in enumerate(trace_list):
+                if event == 1:
+                    job_gen: JobGenerator = np.random.choice(job_generators)
+                    job = job_gen.gen(jid)
+                    f.write(f"{job.job_id}, {t}, {event}, {job.t_rollout}, {job.t_train}, {job.slo}\n")
+                else:
+                    f.write(f"{jid}, {t}, {event}\n")
+
+
+def sim_baseline(sched: BaselineScheduler, trace_fn: str):
+    trace = read_trace(trace_fn)
+    running_jobs: Dict[str, Job] = {}
+    total_cost, last_state_cost, last_t = 0, 0, trace[0][1]
+    time_costs = []  # [(timestamp, cost), ...]
+
+    for i, job_info in enumerate(trace):
+        jid, t, event = job_info[0], job_info[1], job_info[2]
+        if i > 0:
+            delta_t = (t - last_t).total_seconds()
+            total_cost += last_state_cost * delta_t
+            time_costs.append((last_t, t, last_state_cost))
+        if event == 1:
+            assert len(job_info) == 6
+            t_roll, t_train, slo = job_info[3], job_info[4], job_info[5]
+            if len(running_jobs) >= 8:
+                break
+            job = Job(jid, t_roll, t_train, slo)
+            running_jobs[jid] = job
+            print(f"\n======== Insert Job {job.job_id} [{job.t_rollout=}, {job.t_train=}], {running_jobs=} ========")
+            sched.add_job(job)
+        else:
+            del running_jobs[jid]
+            print(f"\n======== Delete Job {jid} [After {running_jobs=}] ========")
+            sched.remove_job(jid)
+        last_state_cost = sum(sched.group_costs.values())
+        last_t = t
+    return total_cost
+
+
+# Helper function for parallel execution
+def compute_opt_cost(jobs_list, max_group_size_):
+    solver = BruteForceSolver(jobs_list, max_group_size_)
     cost, _, _ = solver.solve()
     return cost
 
 
-def sim_main(max_group_size: int):
-    small_unif_job_gen  = JobGenerator(lambda: random.uniform(10, 20), lambda: random.uniform(5, 15), lambda: 1.2)
-    mid_unif_job_gen    = JobGenerator(lambda: random.uniform(20, 40), lambda: random.uniform(10, 30), lambda: 1.2)
-    large_unif_job_gen  = JobGenerator(lambda: random.uniform(40, 80), lambda: random.uniform(20, 60), lambda: 1.2)
-    job_generators = [small_unif_job_gen, mid_unif_job_gen, large_unif_job_gen]
-    trace = read_trace("global_scheduler/trace/philly_0_35000_35.trace")
-    
-    sched = WeaveScheduler(per_time_cost, max_group_size)
-    running_jobs: Dict[str, Job] = {}
-
-    total_cost, last_state_cost, last_t = 0, 0, trace[0][1]
-    time_costs = []  # [(timestamp, cost), ...]
-    job_records = {}
-
+def sim_optimal(trace_fn: str, max_group_size: int):
+    trace = read_trace(trace_fn)
     try:
-        for i, (jid, t, event) in enumerate(trace):
-            if i > 0:
-                delta_t = (t - last_t).total_seconds()
-                total_cost += last_state_cost * delta_t
-                time_costs.append((last_t, t, last_state_cost))
-
-            if event == 1:
-                # if len(running_jobs) >= 8:
-                #     break
-                job_gen: JobGenerator = np.random.choice(job_generators)
-                job = job_gen.gen(jid)
-                running_jobs[jid] = job
-                job_records[jid] = deepcopy(job)
-                print(f"\n======== Insert Job {job.job_id} [{job.t_rollout=}, {job.t_train=}], {len(running_jobs)=} ========")
-                sched.add_job(job)
-            else:
-                del running_jobs[jid]
-                print(f"\n======== Delete Job {jid} [After {len(running_jobs)=}] ========")
-                sched.remove_job(jid)
-
-            print("!!!", sched.group_costs, sum(sched.group_costs.values()))
-
-            last_state_cost = sum(sched.group_costs.values())
-            last_t = t
-
-        # Replay the trace once again, using the same jobs in the record
         print("Submitting all OPT computation tasks...")
         executor = ProcessPoolExecutor(max_workers=8)
         opt_tasks = []  # [(future, start_time, end_time), ...]
         opt_current_jobs = {}
         opt_last_t = trace[0][1]
-
-        for i, (jid, t, event) in enumerate(trace):
+        for i, job_info in enumerate(trace):
+            jid, t, event = job_info[0], job_info[1], job_info[2]
             if i > 0:
                 future = executor.submit(compute_opt_cost, [deepcopy(i) for i in opt_current_jobs.values()], max_group_size)
                 opt_tasks.append((future, opt_last_t, t))
             if event == 1:
-                # if len(opt_current_jobs) >= 8:
-                #     break
-                opt_current_jobs[jid] = job_records[jid]
+                assert len(job_info) == 6
+                t_roll, t_train, slo = job_info[3], job_info[4], job_info[5]
+                if len(opt_current_jobs) >= 8:
+                    break
+                opt_current_jobs[jid] = Job(jid, t_roll, t_train, slo)
             else:
                 del opt_current_jobs[jid]
             opt_last_t = t
@@ -108,14 +148,24 @@ def sim_main(max_group_size: int):
             delta_t = (end_time - start_time).total_seconds()
             total_opt_cost += opt_cost * delta_t
             print(f"OPT cost for period {start_time} to {end_time}: {opt_cost}, duration: {delta_t}")
-
     finally:
         executor.shutdown(wait=True)
+    return total_opt_cost
 
-    print(f"{total_cost=}, {total_opt_cost=}, ratio={total_opt_cost / total_cost if total_cost != 0 else float('inf')}")
 
 
 if __name__ == "__main__":
     random.seed(2345)
     np.random.seed(2345)
-    sim_main(max_group_size=3)
+    max_group_size = 3
+    # generate_jobs("global_scheduler/trace/philly_0_35000_35.trace", lambda: 1.2, "global_scheduler/trace/philly_0_35000_35_parsed")
+    for mix_type in ['uni', 'rh', 'th', 'all']:
+        total_cost = sim_baseline(
+            WeaveScheduler(per_time_cost, max_group_size),
+            f"global_scheduler/trace/philly_0_35000_35_parsed_{mix_type}.trace"
+        )
+        total_opt_cost = sim_optimal(
+            f"global_scheduler/trace/philly_0_35000_35_parsed_{mix_type}.trace",
+            max_group_size
+        )
+        print(f"[{mix_type}] {total_cost=}, {total_opt_cost=}, ratio={total_opt_cost / total_cost if total_cost != 0 else float('inf')}")

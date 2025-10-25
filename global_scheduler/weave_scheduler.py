@@ -2,38 +2,33 @@ from copy import deepcopy
 from typing import List, Dict, Callable
 from global_scheduler.structs import Job, JobGroup
 from global_scheduler.new_simulator import WeaveSimulator
+from global_scheduler.baselines import BaselineScheduler
 
 
 def per_time_cost(jobs: List[Job], num_rollout_nodes: int, train_busy_times: Dict,
-                  total_time: float, rollout_cost: float = 1/3, train_cost: float = 1.0):
+                  total_time: float, rollout_cost: float = 1/3, train_cost: float = 1.0,
+                  return_invalid: bool = False):
     total_working_time = 0
     valid = True
+    invalid_jobs = []
     for job in jobs:
         num_iters = len(train_busy_times['TN'][job.job_id])
         if total_time / num_iters >= job.slo * (job.t_rollout + job.t_train):
             valid = False
+            invalid_jobs.append(job.job_id)
         total_working_time += num_iters * (job.t_rollout + job.t_train)
-    cost_per_time = total_time * (1 * train_cost + num_rollout_nodes * rollout_cost) / total_working_time
-    return cost_per_time if valid else float("inf")
+    # cost_per_time = total_time * (1 * train_cost + num_rollout_nodes * rollout_cost) / total_working_time
+    cost_per_time = 1 * train_cost + num_rollout_nodes * rollout_cost
+    if not return_invalid:
+        return cost_per_time if valid else float("inf")
+    else:
+        return cost_per_time, invalid_jobs
 
 
-class WeaveScheduler:
+class WeaveScheduler(BaselineScheduler):
     def __init__(self, cost_func: Callable[[Dict], float], max_group_size: int = 5,
                  simulate_steps: int = 100, rollout_cost: float = 1/3, train_cost: float = 1.0):
-        self.job_groups: Dict[str, JobGroup] = {}
-        self.last_group_id = -1
-        self.cost_func = cost_func
-        # Tolerate T_meta_iter >= overload_ratio * T1 if it is T2-bound
-        # self.overload_ratio = overload_ratio
-        self.max_group_size = max_group_size
-        self.simulate_steps = simulate_steps
-        self.rollout_cost = rollout_cost
-        self.train_cost = train_cost
-        self.group_costs = {}
-
-    def next_group_id(self):
-        self.last_group_id += 1
-        return f"Group-{self.last_group_id}"
+        super().__init__(cost_func, max_group_size, simulate_steps, rollout_cost, train_cost)
 
     def add_job(self, job: Job):
         best_rollout_node, best_train_node, best_group, best_cost_delta = None, None, None, float("inf")
@@ -102,29 +97,6 @@ class WeaveScheduler:
             self.group_costs[best_group.group_id] += best_cost_delta
         # print(self.group_costs)
         return best_rollout_node, best_train_node, best_group, best_cost_delta
-
-    def remove_job(self, job_id: str) -> None:
-        removed = False
-        for group_id in self.job_groups:
-            job_group = self.job_groups[group_id]
-            for job in job_group.jobs:
-                if job.job_id == job_id:
-                    job_group.jobs.remove(job)
-                    removed = True
-                    if len(job_group.jobs) != 0:
-                        sim = WeaveSimulator(job_group.jobs)
-                        rollout_busy_times, train_busy_times, utils, total_time = sim.simulate_run(self.simulate_steps)
-                        cost = self.cost_func(job_group.jobs, len(job_group.all_rollout_nodes), train_busy_times, total_time, self.rollout_cost, self.train_cost)
-                        self.group_costs[group_id] = cost
-                    else:
-                        self.group_costs[group_id] = 0
-                        del self.group_costs[group_id]
-                        del self.job_groups[group_id]
-                    break
-            if removed:
-                break
-        if not removed:
-            print(f"Remove failed: Job {job_id} does not exist.")
 
 
 if __name__ == "__main__":

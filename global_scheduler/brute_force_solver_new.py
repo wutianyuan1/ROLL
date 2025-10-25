@@ -63,7 +63,8 @@ class BruteForceSolver:
                 if total_time / num_iters >= job.slo * (job.t_rollout + job.t_train):
                     valid = False
                 total_working_time += num_iters * (job.t_rollout + job.t_train)
-            cost_per_time = total_time * (1 * self.train_cost + num_rollout_nodes * self.rollout_cost) / total_working_time
+            # cost_per_time = total_time * (1 * self.train_cost + num_rollout_nodes * self.rollout_cost) / total_working_time
+            cost_per_time = 1 * self.train_cost + num_rollout_nodes * self.rollout_cost
             # print(num_rollout_nodes, [(i.job_id, i.rollout_nodes) for i in group.jobs], total_time, cost_per_time, valid, (1 * self.train_cost + num_rollout_nodes * self.rollout_cost))
             if valid and cost_per_time < best_cost:
                 best_cost = cost_per_time
