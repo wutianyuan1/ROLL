@@ -149,10 +149,14 @@ def sim_optimal(trace_fn: str, max_group_size: int):
 
         print("Waiting for all OPT computations to complete...")
         total_opt_cost = 0
+        opt_costs = []
         for future, start_time, end_time in opt_tasks:
             opt_cost = future.result()
+            if opt_cost > 100000: # inf
+                opt_cost = opt_costs[-1] # simply reset to the last value
             delta_t = (end_time - start_time).total_seconds()
             total_opt_cost += opt_cost * delta_t
+            opt_costs.append(opt_cost)
             print(f"OPT cost for period {start_time} to {end_time}: {opt_cost}, duration: {delta_t}")
     finally:
         executor.shutdown(wait=True)
@@ -165,18 +169,22 @@ if __name__ == "__main__":
     np.random.seed(2345)
     max_group_size = 3
     generate_jobs("global_scheduler/trace/philly_0_35000_35.trace", lambda: random.uniform(1.1, 2), "global_scheduler/trace/philly_0_35000_35_parsed")
-    for mix_type in ['rh']:
+    f = open("global_scheduler/run_results.txt", "w")
+    for mix_type in ['uni', 'rh', 'th', 'all']:
         total_cost = sim_baseline(
-            WeaveScheduler(per_time_cost, max_group_size, simulate_steps=100),
+            WeaveScheduler(per_time_cost, max_group_size),
             f"global_scheduler/trace/philly_0_35000_35_parsed_{mix_type}.trace"
         )
         total_rand_cost = sim_baseline(
             RandomScheduler(per_time_cost, max_group_size),
             f"global_scheduler/trace/philly_0_35000_35_parsed_{mix_type}.trace"
         )
-        # total_opt_cost = sim_optimal(
-        #     f"global_scheduler/trace/philly_0_35000_35_parsed_{mix_type}.trace",
-        #     max_group_size
-        # )
-        print(f"[{mix_type}] {total_cost=}, {total_rand_cost=}, cost ratio={total_rand_cost / total_cost if total_cost != 0 else float('inf')}")
+        total_opt_cost = sim_optimal(
+            f"global_scheduler/trace/philly_0_35000_35_parsed_{mix_type}.trace",
+            max_group_size
+        )
+        result_str = f"[{mix_type}] {total_cost=}, {total_rand_cost=}, {total_opt_cost=}\n"
+        f.write(result_str)
+        print(result_str)
         # print(f"[{mix_type}] {total_cost=}, {total_opt_cost=}, ratio={total_opt_cost / total_cost if total_cost != 0 else float('inf')}")
+    f.close()

@@ -1,0 +1,4 @@
+[uni] total_cost=12943857.666666659, total_rand_cost=20942899.698262434, total_opt_cost=0
+[rh] total_cost=13047789.010833314, total_rand_cost=23306157.670399982, total_opt_cost=0
+[th] total_cost=16658924.000000002, total_rand_cost=25379323.864797685, total_opt_cost=0
+[all] total_cost=14457423.666666668, total_rand_cost=19557728.230484862, total_opt_cost=0
