@@ -1,3 +1,4 @@
+import numpy as np
 from typing import List, Tuple, Set
 from tqdm import tqdm
 from copy import deepcopy
@@ -71,7 +72,7 @@ class BruteForceSolver:
                 best_group = group
         return best_cost, best_group
 
-    def solve(self):
+    def solve_brute_force(self):
         all_possible_partitions = self.build_all_groups([i for i in range(len(self.jobs))])
         best_partition_cost, best_partition, best_groups = float("inf"), None, None
         for partition in tqdm(all_possible_partitions):
@@ -93,6 +94,75 @@ class BruteForceSolver:
                 best_groups = partition_groups
         return best_partition_cost, best_partition, best_groups
 
+
+    def get_random_partitions(self, job_ids: List[int], num: int) -> List[Tuple[Tuple[int, ...], ...]]:
+        partitions_set: Set[Tuple[Tuple[int, ...], ...]] = set()
+        max_attempts = num * 10 
+        attempts = 0
+        job_ids_tuple = tuple(job_ids)
+
+        while len(partitions_set) < num and attempts < max_attempts:
+            partition = self._generate_one_random_partition(job_ids_tuple)
+            partitions_set.add(partition)
+            attempts += 1
+
+        if len(partitions_set) < num:
+            print(f"Warning: Could only generate {len(partitions_set)} unique partitions after {max_attempts} attempts. "
+                  f"The requested number was {num}. This might happen if 'num' is very large "
+                  "or constraints are very tight.")
+
+        return list(partitions_set)
+
+    def _generate_one_random_partition(self, job_ids: Tuple[int, ...]) -> Tuple[Tuple[int, ...], ...]:
+        if not job_ids:
+            return ()
+        shuffled_jobs = list(job_ids)
+        np.random.shuffle(shuffled_jobs)
+        groups: List[List[int]] = []
+        for job_id in shuffled_jobs:
+            possible_placements = []
+            for i, group in enumerate(groups):
+                if len(group) < self.max_group_size:
+                    possible_placements.append(i)
+            possible_placements.append(-1)
+            chosen_placement = np.random.choice(possible_placements)
+            if chosen_placement == -1:
+                groups.append([job_id])
+            else:
+                groups[chosen_placement].append(job_id)
+        canonical_partition = tuple(sorted([tuple(sorted(group)) for group in groups]))
+        return canonical_partition
+
+    def solve(self, max_search_steps=20000):
+        if len(self.jobs) >= 10:
+            all_possible_partitions = self.get_random_partitions(
+                [i for i in range(len(self.jobs))], num=max_search_steps
+            )
+            print(f"[N={len(self.jobs)}] Using random sampler to generate {max_search_steps} partitions, generated={len(all_possible_partitions)}")
+        else:
+            all_possible_partitions = self.build_all_groups(
+                [i for i in range(len(self.jobs))]
+            )
+            print(f"[N={len(self.jobs)}] Using brute-force to enumerate all partitions, all={len(all_possible_partitions)}")
+        best_partition_cost, best_partition, best_groups = float("inf"), None, None
+        for partition in tqdm(all_possible_partitions):
+            valid = True
+            all_groups_cost = 0
+            partition_groups = []
+            for gid, group in enumerate(partition):
+                best_cost, best_group = self.solve_best_placement(gid, group)
+                # If all placements are invalid for this group, then this partitioning is invalid, skip it
+                if best_group is None:
+                    valid = False
+                    break
+                all_groups_cost += best_cost
+                partition_groups.append(best_group)
+            # print(partition, valid, all_groups_cost, best_partition_cost)
+            if valid and all_groups_cost < best_partition_cost:
+                best_partition_cost = all_groups_cost
+                best_partition = partition
+                best_groups = partition_groups
+        return best_partition_cost, best_partition, best_groups
 
 if __name__ == '__main__':
     jobs, max_size = list(range(5)), 3

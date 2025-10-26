@@ -28,7 +28,7 @@ class BaselineScheduler:
     def add_job(self, job: Job):
         pass
 
-    def remove_job(self, job_id: str) -> None:
+    def remove_job(self, job_id: str, return_invalid: bool = False) -> None:
         removed = False
         for group_id in self.job_groups:
             job_group = self.job_groups[group_id]
@@ -39,7 +39,10 @@ class BaselineScheduler:
                     if len(job_group.jobs) != 0:
                         sim = WeaveSimulator(job_group.jobs)
                         rollout_busy_times, train_busy_times, utils, total_time = sim.simulate_run(self.simulate_steps)
-                        cost = self.cost_func(job_group.jobs, len(job_group.all_rollout_nodes), train_busy_times, total_time, self.rollout_cost, self.train_cost)
+                        if return_invalid:
+                            cost, invalid_jobs = self.cost_func(job_group.jobs, len(job_group.all_rollout_nodes), train_busy_times, total_time, self.rollout_cost, self.train_cost, return_invalid=return_invalid)
+                        else:
+                            cost = self.cost_func(job_group.jobs, len(job_group.all_rollout_nodes), train_busy_times, total_time, self.rollout_cost, self.train_cost)
                         self.group_costs[group_id] = cost
                     else:
                         self.group_costs[group_id] = 0
@@ -85,7 +88,7 @@ class RandomScheduler(BaselineScheduler):
             # Place the job into a new group
             tmp_job = deepcopy(job)
             tmp_job.rollout_nodes = [best_rollout_node]
-            tmp_job.rollout_nodes = [best_train_node]
+            tmp_job.train_nodes = [best_train_node]
             # Add the job into the existing group
             self.job_groups[job_group.group_id].jobs.append(tmp_job)
         sim = WeaveSimulator(job_group.jobs)
@@ -95,3 +98,6 @@ class RandomScheduler(BaselineScheduler):
             total_time, self.rollout_cost, self.train_cost, return_invalid=True)
         self.group_costs[job_group.group_id] = cost
         return best_rollout_node, best_train_node, job_group, cost, invalid_jobs
+
+    def remove_job(self, job_id: str) -> None:
+        super().remove_job(job_id, return_invalid=True)

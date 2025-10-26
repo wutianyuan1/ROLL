@@ -141,7 +141,7 @@ class WeaveSimulator:
         # Main discrete-event simulation loop
         while True:
             # Termination condition: all jobs have completed at least n_iters
-            if any(job.iterations_done >= n_iters for job in self.jobs_map.values()):
+            if all(job.iterations_done >= n_iters for job in self.jobs_map.values()):
                 break
 
             if not self.event_queue:

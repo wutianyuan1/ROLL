@@ -10,19 +10,21 @@ def per_time_cost(jobs: List[Job], num_rollout_nodes: int, train_busy_times: Dic
                   return_invalid: bool = False):
     total_working_time = 0
     valid = True
-    invalid_jobs = []
+    invalid_jobs = {}
     for job in jobs:
         num_iters = len(train_busy_times['TN'][job.job_id])
         if total_time / num_iters >= job.slo * (job.t_rollout + job.t_train):
             valid = False
-            invalid_jobs.append(job.job_id)
+            invalid_jobs[job.job_id] = (total_time / num_iters) / (job.t_rollout + job.t_train)
         total_working_time += num_iters * (job.t_rollout + job.t_train)
     # cost_per_time = total_time * (1 * train_cost + num_rollout_nodes * rollout_cost) / total_working_time
     cost_per_time = 1 * train_cost + num_rollout_nodes * rollout_cost
     if not return_invalid:
         return cost_per_time if valid else float("inf")
     else:
-        return cost_per_time, invalid_jobs
+        if len(invalid_jobs) != 0:
+            return cost_per_time * max(invalid_jobs.values()), invalid_jobs
+        return cost_per_time * 1, invalid_jobs
 
 
 class WeaveScheduler(BaselineScheduler):

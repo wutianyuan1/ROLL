@@ -87,7 +87,7 @@ def sim_baseline(sched: BaselineScheduler, trace_fn: str):
     total_cost, last_state_cost, last_t = 0, 0, trace[0][1]
     time_costs = []  # [(timestamp, cost), ...]
 
-    for i, job_info in enumerate(trace):
+    for i, job_info in enumerate(trace[:200]):
         jid, t, event = job_info[0], job_info[1], job_info[2]
         if i > 0:
             delta_t = (t - last_t).total_seconds()
@@ -96,8 +96,6 @@ def sim_baseline(sched: BaselineScheduler, trace_fn: str):
         if event == 1:
             assert len(job_info) == 6
             t_roll, t_train, slo = job_info[3], job_info[4], job_info[5]
-            if len(running_jobs) >= 8:
-                break
             job = Job(jid, t_roll, t_train, slo)
             running_jobs[jid] = job
             print(f"\n======== Insert Job {job.job_id} [{job.t_rollout=}, {job.t_train=}], {running_jobs=} ========")
@@ -122,11 +120,11 @@ def sim_optimal(trace_fn: str, max_group_size: int):
     trace = read_trace(trace_fn)
     try:
         print("Submitting all OPT computation tasks...")
-        executor = ProcessPoolExecutor(max_workers=8)
+        executor = ProcessPoolExecutor(max_workers=14)
         opt_tasks = []  # [(future, start_time, end_time), ...]
         opt_current_jobs = {}
         opt_last_t = trace[0][1]
-        for i, job_info in enumerate(trace):
+        for i, job_info in enumerate(trace[:200]):
             jid, t, event = job_info[0], job_info[1], job_info[2]
             if i > 0:
                 future = executor.submit(compute_opt_cost, [deepcopy(i) for i in opt_current_jobs.values()], max_group_size)
@@ -134,8 +132,6 @@ def sim_optimal(trace_fn: str, max_group_size: int):
             if event == 1:
                 assert len(job_info) == 6
                 t_roll, t_train, slo = job_info[3], job_info[4], job_info[5]
-                if len(opt_current_jobs) >= 8:
-                    break
                 opt_current_jobs[jid] = Job(jid, t_roll, t_train, slo)
             else:
                 del opt_current_jobs[jid]
@@ -158,14 +154,19 @@ if __name__ == "__main__":
     random.seed(2345)
     np.random.seed(2345)
     max_group_size = 3
-    # generate_jobs("global_scheduler/trace/philly_0_35000_35.trace", lambda: 1.2, "global_scheduler/trace/philly_0_35000_35_parsed")
-    for mix_type in ['uni', 'rh', 'th', 'all']:
+    generate_jobs("global_scheduler/trace/philly_0_35000_35.trace", lambda: random.uniform(1.1, 2), "global_scheduler/trace/philly_0_35000_35_parsed")
+    for mix_type in ['uni']:
         total_cost = sim_baseline(
             WeaveScheduler(per_time_cost, max_group_size),
             f"global_scheduler/trace/philly_0_35000_35_parsed_{mix_type}.trace"
         )
-        total_opt_cost = sim_optimal(
-            f"global_scheduler/trace/philly_0_35000_35_parsed_{mix_type}.trace",
-            max_group_size
+        total_rand_cost = sim_baseline(
+            RandomScheduler(per_time_cost, max_group_size),
+            f"global_scheduler/trace/philly_0_35000_35_parsed_{mix_type}.trace"
         )
-        print(f"[{mix_type}] {total_cost=}, {total_opt_cost=}, ratio={total_opt_cost / total_cost if total_cost != 0 else float('inf')}")
+        # total_opt_cost = sim_optimal(
+        #     f"global_scheduler/trace/philly_0_35000_35_parsed_{mix_type}.trace",
+        #     max_group_size
+        # )
+        print(f"[{mix_type}] {total_cost=}, {total_rand_cost=}, ratio={total_rand_cost / total_cost if total_cost != 0 else float('inf')}")
+        # print(f"[{mix_type}] {total_cost=}, {total_opt_cost=}, ratio={total_opt_cost / total_cost if total_cost != 0 else float('inf')}")
