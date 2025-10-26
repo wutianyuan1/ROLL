@@ -194,11 +194,11 @@ class WeaveSimulator:
                     cleaned_train_busy_times[node][j_id] = intervals
 
         # 2. Calculate utilization statistics
-        utils = {"rollout": [], "train": []}
+        utils = {"rollout": {}, "train": []}
         if total_time > 0:
             for node in self.all_rollout_nodes:
                 node_busy_time = sum(end - start for j_data in self.rollout_busy_times[node].values() for start, end in j_data)
-                utils["rollout"].append(node_busy_time / total_time)
+                utils["rollout"][node] = node_busy_time / total_time
 
             if self.all_train_nodes:
                 first_train_node = self.all_train_nodes[0]

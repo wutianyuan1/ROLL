@@ -11,7 +11,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 from global_scheduler.brute_force_solver_new import BruteForceSolver
 from global_scheduler.weave_scheduler import WeaveScheduler, per_time_cost
-from global_scheduler.baselines import BaselineScheduler, RandomScheduler
+from global_scheduler.baselines import BaselineScheduler, RandomScheduler, MostIdleScheduler
 from global_scheduler.structs import Job
 
 
@@ -90,7 +90,7 @@ def sim_baseline(sched: BaselineScheduler, trace_fn: str):
     time_costs = []  # [(timestamp, cost), ...]
     time_invalid_jobs = []
 
-    for i, job_info in tqdm(enumerate(trace[:2000])):
+    for i, job_info in enumerate(tqdm(trace)):
         jid, t, event = job_info[0], job_info[1], job_info[2]
         if i > 0:
             delta_t = (t - last_t).total_seconds()
@@ -122,16 +122,16 @@ def sim_baseline(sched: BaselineScheduler, trace_fn: str):
 
 # Helper function for parallel execution
 def compute_opt_cost(jobs_list, max_group_size_):
-    solver = BruteForceSolver(jobs_list, max_group_size_)
-    cost, _, _ = solver.solve()
+    solver = BruteForceSolver(jobs_list, max_group_size_, n_iters=20)
+    cost, _, _ = solver.solve(max_search_steps=10000)
     return cost
 
 
-def sim_optimal(trace_fn: str, max_group_size: int):
+def sim_optimal(trace_fn: str, max_group_size: int, fallback_opt_cost: Dict):
     trace = read_trace(trace_fn)
     try:
         print("Submitting all OPT computation tasks...")
-        executor = ProcessPoolExecutor(max_workers=40)
+        executor = ProcessPoolExecutor(max_workers=8)
         opt_tasks = []  # [(future, start_time, end_time), ...]
         opt_current_jobs = {}
         opt_last_t = trace[0][1]
@@ -153,12 +153,13 @@ def sim_optimal(trace_fn: str, max_group_size: int):
         opt_costs = []
         for future, start_time, end_time in opt_tasks:
             opt_cost = future.result()
+            real_opt = opt_cost
             if opt_cost > 100000: # inf
-                opt_cost = opt_costs[-1][2] # simply reset to the last value
+                opt_cost = fallback_opt_cost[start_time] # simply reset to the Weave's best value
             delta_t = (end_time - start_time).total_seconds()
             total_opt_cost += opt_cost * delta_t
             opt_costs.append((start_time, end_time, opt_cost))
-            print(f"OPT cost for period {start_time} to {end_time}: {opt_cost}, duration: {delta_t}")
+            print(f"OPT cost for period {start_time} to {end_time}: {real_opt}, duration: {delta_t}")
     finally:
         executor.shutdown(wait=True)
     return total_opt_cost, opt_costs
@@ -169,26 +170,34 @@ if __name__ == "__main__":
     random.seed(2345)
     np.random.seed(2345)
     max_group_size = 3
-    generate_jobs("global_scheduler/trace/philly_0_10000_10.trace", lambda: random.uniform(1.1, 2), "global_scheduler/trace/philly_0_10000_10_parsed")
+    generate_jobs("global_scheduler/trace/philly_0_30000_20.trace", lambda: random.uniform(1.1, 2), "global_scheduler/trace/philly_0_30000_20_parsed")
     f = open("global_scheduler/run_results.txt", "w")
-    for mix_type in ['all']: #['uni', 'rh', 'th', 'all']:
+    for mix_type in ['uni', 'rh', 'th', 'all']:
         total_cost, time_costs, time_invalid_jobs = sim_baseline(
-            WeaveScheduler(per_time_cost, max_group_size),
-            f"global_scheduler/trace/philly_0_10000_10_parsed_{mix_type}.trace"
+            WeaveScheduler(per_time_cost, max_group_size, simulate_steps=20),
+            f"global_scheduler/trace/philly_0_30000_20_parsed_{mix_type}.trace"
         )
+        fallback_opt_cost = {}
+        for (last_t, t, cost_last_t) in time_costs:
+            fallback_opt_cost[last_t] = cost_last_t
         total_rand_cost, time_rand_costs, time_rank_invalid_jobs = sim_baseline(
             RandomScheduler(per_time_cost, max_group_size),
-            f"global_scheduler/trace/philly_0_10000_10_parsed_{mix_type}.trace"
+            f"global_scheduler/trace/philly_0_30000_20_parsed_{mix_type}.trace"
+        )
+        total_idle_cost, time_idle_costs, time_idle_invalid_jobs = sim_baseline(
+            MostIdleScheduler(per_time_cost, max_group_size),
+            f"global_scheduler/trace/philly_0_30000_20_parsed_{mix_type}.trace"
         )
         total_opt_cost, opt_costs = sim_optimal(
-            f"global_scheduler/trace/philly_0_10000_10_parsed_{mix_type}.trace",
-            max_group_size
+            f"global_scheduler/trace/philly_0_30000_20_parsed_{mix_type}.trace",
+            max_group_size,
+            fallback_opt_cost
         )
-        result_str = f"[{mix_type}] {total_cost=}, {total_rand_cost=}, {total_opt_cost=}\n"
+        result_str = f"[{mix_type}] {total_cost=}, {total_rand_cost=}, {total_idle_cost=}, {total_opt_cost=}\n"
         f.write(f"{mix_type}--"
                 f"Weave|{total_cost}|{time_costs}|{time_invalid_jobs}||"
                 f"Random|{total_rand_cost}|{time_rand_costs}|{time_rank_invalid_jobs}||"
+                f"MostIdle|{total_idle_cost}|{time_idle_costs}|{time_idle_invalid_jobs}||"
                 f"Opt|{total_opt_cost}|{opt_costs}|{[]}\n")
         print(result_str)
-        # print(f"[{mix_type}] {total_cost=}, {total_opt_cost=}, ratio={total_opt_cost / total_cost if total_cost != 0 else float('inf')}")
     f.close()

@@ -20,6 +20,7 @@ class BaselineScheduler:
         self.train_cost = train_cost
         self.group_costs = {}
         self.group_invalid_jobs = {}
+        self.group_utils = {}
 
     @property
     def total_running_jobs(self) -> int:
@@ -52,8 +53,12 @@ class BaselineScheduler:
                                 del invalid_jobs[exist_job.job_id]
                         self.group_invalid_jobs[job_group.group_id] = invalid_jobs
                         self.group_costs[group_id] = cost
+                        if job_group.group_id in self.group_utils:
+                            self.group_utils[job_group.group_id] = utils
                     else:
                         self.group_costs[group_id] = 0
+                        if group_id in self.group_utils:
+                            del self.group_utils[group_id]
                         del self.group_costs[group_id]
                         del self.job_groups[group_id]
                     break
@@ -61,6 +66,7 @@ class BaselineScheduler:
                 break
         if not removed:
             print(f"Remove failed: Job {job_id} does not exist.")
+
 
 class RandomScheduler(BaselineScheduler):
     def __init__(self, cost_func: Callable[[Dict], float], max_group_size: int = 5,
@@ -101,6 +107,72 @@ class RandomScheduler(BaselineScheduler):
             self.job_groups[job_group.group_id].jobs.append(tmp_job)
         sim = WeaveSimulator(job_group.jobs)
         rollout_busy_times, train_busy_times, utils, total_time = sim.simulate_run(self.simulate_steps)
+        cost, invalid_jobs = self.cost_func(
+            job_group.jobs, len(job_group.all_rollout_nodes), train_busy_times,
+            total_time, self.rollout_cost, self.train_cost, return_invalid=True)
+        self.group_costs[job_group.group_id] = cost
+        self.group_invalid_jobs[job_group.group_id] = invalid_jobs
+        return best_rollout_node, best_train_node, job_group, cost, invalid_jobs
+
+    def remove_job(self, job_id: str) -> None:
+        super().remove_job(job_id)
+
+
+class MostIdleScheduler(BaselineScheduler):
+    def __init__(self, cost_func: Callable[[Dict], float], max_group_size: int = 5,
+                 simulate_steps: int = 100, rollout_cost: float = 1/3, train_cost: float = 1.0):
+        super().__init__(cost_func, max_group_size, simulate_steps, rollout_cost, train_cost)
+    
+    def add_job(self, job: Job):
+        existing_gids = list(self.job_groups.keys())
+        new_gid = self.next_group_id()
+        possible_gids = [new_gid] + existing_gids
+        target_grp_id = np.random.choice(possible_gids)
+        # Randomly decide if add a new group
+        if target_grp_id == new_gid:
+            # Place the job into a new group
+            tmp_job = deepcopy(job)
+            tmp_job.rollout_nodes = ["0"]
+            tmp_job.train_nodes = ["TN"]
+            job_group = JobGroup(target_grp_id, [tmp_job])
+            # Assign rollout and train nodes
+            best_rollout_node = job_group.all_rollout_nodes[0]
+            best_train_node = job_group.all_train_nodes[0]
+            # Record the new created group
+            self.job_groups[job_group.group_id] = job_group
+        else:
+            self.last_group_id -= 1  # recall the new group id
+            # Assign rollout and train nodes
+            job_group, min_util, min_detail_util = None, float("inf"), None
+            for gid, jgrp in self.job_groups.items():
+                cur_utils = self.group_utils[gid]
+                avg_util = np.average(list(cur_utils['rollout'].values()) + cur_utils['train'])
+                if avg_util < min_util:
+                    min_util = avg_util
+                    job_group = jgrp
+                    min_detail_util = cur_utils
+            min_util_rollout_node, min_rutil = None, float("inf")
+            for node in min_detail_util['rollout']:
+                if min_detail_util['rollout'][node] < min_rutil:
+                    min_rutil = min_detail_util['rollout'][node]
+                    min_util_rollout_node = node
+            # For the most idle group, find the most idle rollout node
+            # Check if it is too full. If so, create a new rollout node.
+            if min_rutil >= 0.8:
+                best_rollout_node = str(job_group.last_rollout_node_id + 1)
+                job_group.last_rollout_node_id += 1  # allocate a new rollout ID
+            else:
+                best_rollout_node = min_util_rollout_node
+            best_train_node = job_group.all_train_nodes[0]
+            # Place the job into a new group
+            tmp_job = deepcopy(job)
+            tmp_job.rollout_nodes = [best_rollout_node]
+            tmp_job.train_nodes = [best_train_node]
+            # Add the job into the existing group
+            self.job_groups[job_group.group_id].jobs.append(tmp_job)
+        sim = WeaveSimulator(job_group.jobs)
+        rollout_busy_times, train_busy_times, utils, total_time = sim.simulate_run(self.simulate_steps)
+        self.group_utils[job_group.group_id] = utils
         cost, invalid_jobs = self.cost_func(
             job_group.jobs, len(job_group.all_rollout_nodes), train_busy_times,
             total_time, self.rollout_cost, self.train_cost, return_invalid=True)
