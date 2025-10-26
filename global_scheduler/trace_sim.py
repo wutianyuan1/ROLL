@@ -85,27 +85,37 @@ def sim_baseline(sched: BaselineScheduler, trace_fn: str):
     trace = read_trace(trace_fn)
     running_jobs: Dict[str, Job] = {}
     total_cost, last_state_cost, last_t = 0, 0, trace[0][1]
+    last_state_total_jobs, last_state_invalid_jobs = 0, {}
     time_costs = []  # [(timestamp, cost), ...]
+    time_invalid_jobs = []
 
-    for i, job_info in enumerate(trace[:200]):
+    for i, job_info in enumerate(trace):
         jid, t, event = job_info[0], job_info[1], job_info[2]
         if i > 0:
             delta_t = (t - last_t).total_seconds()
             total_cost += last_state_cost * delta_t
             time_costs.append((last_t, t, last_state_cost))
+            time_invalid_jobs.append((last_t, t, last_state_invalid_jobs, last_state_total_jobs))
         if event == 1:
             assert len(job_info) == 6
             t_roll, t_train, slo = job_info[3], job_info[4], job_info[5]
             job = Job(jid, t_roll, t_train, slo)
             running_jobs[jid] = job
-            print(f"\n======== Insert Job {job.job_id} [{job.t_rollout=}, {job.t_train=}], {running_jobs=} ========")
+            # print(f"\n======== Insert Job {job.job_id} [{job.t_rollout=}, {job.t_train=}], {running_jobs=} ========")
             sched.add_job(job)
         else:
             del running_jobs[jid]
-            print(f"\n======== Delete Job {jid} [After {running_jobs=}] ========")
+            # print(f"\n======== Delete Job {jid} [After {running_jobs=}] ========")
             sched.remove_job(jid)
         last_state_cost = sum(sched.group_costs.values())
+        last_state_invalid_jobs = deepcopy(sched.group_invalid_jobs)
+        last_state_total_jobs = sched.total_running_jobs
         last_t = t
+
+    num_invalid_jobs = lambda group_invalid_jobs: sum(len(group_invalid_jobs[grp_id]) for grp_id in group_invalid_jobs)
+    slo_violation_counts = [num_invalid_jobs(i[2]) for i in time_invalid_jobs]
+    slo_violation_ratio = sum(slo_violation_counts) / sum(i[3] for i in time_invalid_jobs)
+    print(f"SLO violation ratio = {slo_violation_ratio}")
     return total_cost
 
 
@@ -124,7 +134,7 @@ def sim_optimal(trace_fn: str, max_group_size: int):
         opt_tasks = []  # [(future, start_time, end_time), ...]
         opt_current_jobs = {}
         opt_last_t = trace[0][1]
-        for i, job_info in enumerate(trace[:200]):
+        for i, job_info in enumerate(trace):
             jid, t, event = job_info[0], job_info[1], job_info[2]
             if i > 0:
                 future = executor.submit(compute_opt_cost, [deepcopy(i) for i in opt_current_jobs.values()], max_group_size)
@@ -155,9 +165,9 @@ if __name__ == "__main__":
     np.random.seed(2345)
     max_group_size = 3
     generate_jobs("global_scheduler/trace/philly_0_35000_35.trace", lambda: random.uniform(1.1, 2), "global_scheduler/trace/philly_0_35000_35_parsed")
-    for mix_type in ['uni']:
+    for mix_type in ['rh']:
         total_cost = sim_baseline(
-            WeaveScheduler(per_time_cost, max_group_size),
+            WeaveScheduler(per_time_cost, max_group_size, simulate_steps=100),
             f"global_scheduler/trace/philly_0_35000_35_parsed_{mix_type}.trace"
         )
         total_rand_cost = sim_baseline(
@@ -168,5 +178,5 @@ if __name__ == "__main__":
         #     f"global_scheduler/trace/philly_0_35000_35_parsed_{mix_type}.trace",
         #     max_group_size
         # )
-        print(f"[{mix_type}] {total_cost=}, {total_rand_cost=}, ratio={total_rand_cost / total_cost if total_cost != 0 else float('inf')}")
+        print(f"[{mix_type}] {total_cost=}, {total_rand_cost=}, cost ratio={total_rand_cost / total_cost if total_cost != 0 else float('inf')}")
         # print(f"[{mix_type}] {total_cost=}, {total_opt_cost=}, ratio={total_opt_cost / total_cost if total_cost != 0 else float('inf')}")

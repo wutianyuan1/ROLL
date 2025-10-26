@@ -50,7 +50,7 @@ class WeaveScheduler(BaselineScheduler):
                     sim = WeaveSimulator(jobs_in_group)
                     rollout_busy_times, train_busy_times, utils, total_time = sim.simulate_run(self.simulate_steps)
                     cost = self.cost_func(jobs_in_group, len(all_rollout_nodes), train_busy_times, total_time, self.rollout_cost, self.train_cost)
-                    print(f"Case-1, {rollout_node=}, {train_node=}, {cost=}")
+                    # print(f"Case-1, {rollout_node=}, {train_node=}, {cost=}")
                     if cost - self.group_costs[job_group_name] < best_cost_delta:
                         best_cost_delta = cost - self.group_costs[job_group_name]
                         best_rollout_node = rollout_node
@@ -66,7 +66,7 @@ class WeaveScheduler(BaselineScheduler):
                 sim = WeaveSimulator(jobs_in_group)
                 rollout_busy_times, train_busy_times, utils, total_time = sim.simulate_run(self.simulate_steps)
                 cost = self.cost_func(jobs_in_group, len(all_rollout_nodes) + 1, train_busy_times, total_time, self.rollout_cost, self.train_cost)
-                print(f"Case-2, {rollout_node=}, {train_node=}, {cost=}")
+                # print(f"Case-2, {rollout_node=}, {train_node=}, {cost=}")
                 if cost - self.group_costs[job_group_name] < best_cost_delta:
                     best_cost_delta = cost - self.group_costs[job_group_name]
                     best_rollout_node = rollout_node
@@ -80,7 +80,7 @@ class WeaveScheduler(BaselineScheduler):
         sim = WeaveSimulator(job_group.jobs)
         rollout_busy_times, train_busy_times, utils, total_time = sim.simulate_run(self.simulate_steps)
         cost = self.cost_func(job_group.jobs, 1, train_busy_times, total_time, self.rollout_cost, self.train_cost)
-        print(f"Case-3, {cost=}")
+        # print(f"Case-3, {cost=}")
         # If new group is the best
         if cost < best_cost_delta:
             best_cost_delta = cost
@@ -98,7 +98,7 @@ class WeaveScheduler(BaselineScheduler):
             self.job_groups[best_group.group_id].jobs.append(tmp_job)
             self.group_costs[best_group.group_id] += best_cost_delta
         # print(self.group_costs)
-        return best_rollout_node, best_train_node, best_group, best_cost_delta
+        return best_rollout_node, best_train_node, best_group, best_cost_delta, {}
 
 
 if __name__ == "__main__":
