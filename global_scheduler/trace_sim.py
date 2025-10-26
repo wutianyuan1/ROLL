@@ -3,6 +3,7 @@ import os
 import sys
 import random
 import numpy as np
+from tqdm import tqdm
 from copy import deepcopy
 from datetime import datetime
 from typing import Callable, List, Dict, Tuple
@@ -89,7 +90,7 @@ def sim_baseline(sched: BaselineScheduler, trace_fn: str):
     time_costs = []  # [(timestamp, cost), ...]
     time_invalid_jobs = []
 
-    for i, job_info in enumerate(trace):
+    for i, job_info in tqdm(enumerate(trace[:2000])):
         jid, t, event = job_info[0], job_info[1], job_info[2]
         if i > 0:
             delta_t = (t - last_t).total_seconds()
@@ -116,7 +117,7 @@ def sim_baseline(sched: BaselineScheduler, trace_fn: str):
     slo_violation_counts = [num_invalid_jobs(i[2]) for i in time_invalid_jobs]
     slo_violation_ratio = sum(slo_violation_counts) / sum(i[3] for i in time_invalid_jobs)
     print(f"SLO violation ratio = {slo_violation_ratio}")
-    return total_cost
+    return total_cost, time_costs, time_invalid_jobs
 
 
 # Helper function for parallel execution
@@ -130,7 +131,7 @@ def sim_optimal(trace_fn: str, max_group_size: int):
     trace = read_trace(trace_fn)
     try:
         print("Submitting all OPT computation tasks...")
-        executor = ProcessPoolExecutor(max_workers=14)
+        executor = ProcessPoolExecutor(max_workers=40)
         opt_tasks = []  # [(future, start_time, end_time), ...]
         opt_current_jobs = {}
         opt_last_t = trace[0][1]
@@ -153,14 +154,14 @@ def sim_optimal(trace_fn: str, max_group_size: int):
         for future, start_time, end_time in opt_tasks:
             opt_cost = future.result()
             if opt_cost > 100000: # inf
-                opt_cost = opt_costs[-1] # simply reset to the last value
+                opt_cost = opt_costs[-1][2] # simply reset to the last value
             delta_t = (end_time - start_time).total_seconds()
             total_opt_cost += opt_cost * delta_t
-            opt_costs.append(opt_cost)
+            opt_costs.append((start_time, end_time, opt_cost))
             print(f"OPT cost for period {start_time} to {end_time}: {opt_cost}, duration: {delta_t}")
     finally:
         executor.shutdown(wait=True)
-    return total_opt_cost
+    return total_opt_cost, opt_costs
 
 
 
@@ -168,23 +169,26 @@ if __name__ == "__main__":
     random.seed(2345)
     np.random.seed(2345)
     max_group_size = 3
-    generate_jobs("global_scheduler/trace/philly_0_35000_35.trace", lambda: random.uniform(1.1, 2), "global_scheduler/trace/philly_0_35000_35_parsed")
+    generate_jobs("global_scheduler/trace/philly_0_10000_10.trace", lambda: random.uniform(1.1, 2), "global_scheduler/trace/philly_0_10000_10_parsed")
     f = open("global_scheduler/run_results.txt", "w")
-    for mix_type in ['uni', 'rh', 'th', 'all']:
-        total_cost = sim_baseline(
+    for mix_type in ['all']: #['uni', 'rh', 'th', 'all']:
+        total_cost, time_costs, time_invalid_jobs = sim_baseline(
             WeaveScheduler(per_time_cost, max_group_size),
-            f"global_scheduler/trace/philly_0_35000_35_parsed_{mix_type}.trace"
+            f"global_scheduler/trace/philly_0_10000_10_parsed_{mix_type}.trace"
         )
-        total_rand_cost = sim_baseline(
+        total_rand_cost, time_rand_costs, time_rank_invalid_jobs = sim_baseline(
             RandomScheduler(per_time_cost, max_group_size),
-            f"global_scheduler/trace/philly_0_35000_35_parsed_{mix_type}.trace"
+            f"global_scheduler/trace/philly_0_10000_10_parsed_{mix_type}.trace"
         )
-        total_opt_cost = sim_optimal(
-            f"global_scheduler/trace/philly_0_35000_35_parsed_{mix_type}.trace",
+        total_opt_cost, opt_costs = sim_optimal(
+            f"global_scheduler/trace/philly_0_10000_10_parsed_{mix_type}.trace",
             max_group_size
         )
         result_str = f"[{mix_type}] {total_cost=}, {total_rand_cost=}, {total_opt_cost=}\n"
-        f.write(result_str)
+        f.write(f"{mix_type}--"
+                f"Weave|{total_cost}|{time_costs}|{time_invalid_jobs}||"
+                f"Random|{total_rand_cost}|{time_rand_costs}|{time_rank_invalid_jobs}||"
+                f"Opt|{total_opt_cost}|{opt_costs}|{[]}\n")
         print(result_str)
         # print(f"[{mix_type}] {total_cost=}, {total_opt_cost=}, ratio={total_opt_cost / total_cost if total_cost != 0 else float('inf')}")
     f.close()
