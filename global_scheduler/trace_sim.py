@@ -165,26 +165,26 @@ def sim_optimal(trace_fn: str, max_group_size: int, fallback_opt_cost: Dict, man
     return total_opt_cost, opt_costs
 
 
-def run_ablation_types(max_group_size: int):
+def run_ablation_types(trace_fn_base:str, max_group_size: int):
     f = open("global_scheduler/run_results_type.txt", "w")
-    for mix_type in ['uni']:
+    for mix_type in ['uni', 'rh', 'th', 'all']:
         total_cost, time_costs, time_invalid_jobs = sim_baseline(
-            WeaveScheduler(per_time_cost, max_group_size, simulate_steps=20),
-            f"global_scheduler/trace/philly_0_30000_20_parsed_{mix_type}.trace"
+            WeaveScheduler(per_time_cost, max_group_size),
+            trace_fn_base.format(mix_type),
         )
         fallback_opt_cost = {}
         for (last_t, t, cost_last_t) in time_costs:
             fallback_opt_cost[last_t] = cost_last_t
         total_rand_cost, time_rand_costs, time_rank_invalid_jobs = sim_baseline(
             RandomScheduler(per_time_cost, max_group_size),
-            f"global_scheduler/trace/philly_0_30000_20_parsed_{mix_type}.trace"
+            trace_fn_base.format(mix_type),
         )
         total_idle_cost, time_idle_costs, time_idle_invalid_jobs = sim_baseline(
             MostIdleScheduler(per_time_cost, max_group_size),
-            f"global_scheduler/trace/philly_0_30000_20_parsed_{mix_type}.trace"
+            trace_fn_base.format(mix_type),
         )
         total_opt_cost, opt_costs = sim_optimal(
-            f"global_scheduler/trace/philly_0_30000_20_parsed_{mix_type}.trace",
+            trace_fn_base.format(mix_type),
             max_group_size,
             fallback_opt_cost
         )
@@ -198,28 +198,28 @@ def run_ablation_types(max_group_size: int):
     f.close()
 
 
-def run_ablation_slo(max_group_size: int):
+def run_ablation_slo(trace_fn: str, max_group_size: int):
     f = open("global_scheduler/run_results_slo.txt", "w")
     for SLO in [1.2, 1.5, 2.0]:
         total_cost, time_costs, time_invalid_jobs = sim_baseline(
             WeaveScheduler(per_time_cost, max_group_size),
-            f"global_scheduler/trace/philly_0_30000_20_parsed_all.trace"
+            trace_fn
         )
         fallback_opt_cost = {}
         for (last_t, t, cost_last_t) in time_costs:
             fallback_opt_cost[last_t] = cost_last_t
         total_rand_cost, time_rand_costs, time_rank_invalid_jobs = sim_baseline(
             RandomScheduler(per_time_cost, max_group_size),
-            f"global_scheduler/trace/philly_0_30000_20_parsed_all.trace",
+            trace_fn,
             mannual_slo=SLO
         )
         total_idle_cost, time_idle_costs, time_idle_invalid_jobs = sim_baseline(
             MostIdleScheduler(per_time_cost, max_group_size),
-            f"global_scheduler/trace/philly_0_30000_20_parsed_all.trace",
+            trace_fn,
             mannual_slo=SLO
         )
         total_opt_cost, opt_costs = sim_optimal(
-            f"global_scheduler/trace/philly_0_30000_20_parsed_all.trace",
+            trace_fn,
             max_group_size,
             fallback_opt_cost
         )
@@ -233,9 +233,43 @@ def run_ablation_slo(max_group_size: int):
     f.close()
 
 
+def run_ablation_group_size(trace_fn: str):
+    f = open("global_scheduler/run_results_grp_size.txt", "w")
+    for group_size in [2, 4, 5]:
+        total_cost, time_costs, time_invalid_jobs = sim_baseline(
+            WeaveScheduler(per_time_cost, max_group_size=group_size),
+            trace_fn,
+        )
+        fallback_opt_cost = {}
+        for (last_t, t, cost_last_t) in time_costs:
+            fallback_opt_cost[last_t] = cost_last_t
+        total_rand_cost, time_rand_costs, time_rank_invalid_jobs = sim_baseline(
+            RandomScheduler(per_time_cost, max_group_size=group_size),
+            trace_fn,
+        )
+        total_idle_cost, time_idle_costs, time_idle_invalid_jobs = sim_baseline(
+            MostIdleScheduler(per_time_cost, max_group_size=group_size),
+            trace_fn,
+        )
+        total_opt_cost, opt_costs = sim_optimal(
+            trace_fn,
+            max_group_size,
+            fallback_opt_cost
+        )
+        result_str = f"[{group_size}] {total_cost=}, {total_rand_cost=}, {total_idle_cost=}, {total_opt_cost=}\n"
+        f.write(f"{group_size}--"
+                f"Weave|{total_cost}|{time_costs}|{time_invalid_jobs}||"
+                f"Random|{total_rand_cost}|{time_rand_costs}|{time_rank_invalid_jobs}||"
+                f"MostIdle|{total_idle_cost}|{time_idle_costs}|{time_idle_invalid_jobs}||"
+                f"Opt|{total_opt_cost}|{opt_costs}|{[]}\n")
+        print(result_str)
+    f.close()
+
 if __name__ == "__main__":
     random.seed(2345)
     np.random.seed(2345)
     max_group_size = 3
     # generate_jobs("global_scheduler/trace/philly_0_30000_20.trace", lambda: random.uniform(1.1, 2), "global_scheduler/trace/philly_0_30000_20_parsed")
-    run_ablation_slo(max_group_size)
+    # run_ablation_types("global_scheduler/trace/philly_0_30000_20_parsed_{}.trace", max_group_size)
+    # run_ablation_slo("global_scheduler/trace/philly_0_30000_20_parsed_all.trace", max_group_size)
+    run_ablation_group_size("global_scheduler/trace/philly_0_30000_20_parsed_all.trace")
