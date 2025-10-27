@@ -253,7 +253,7 @@ def run_ablation_group_size(trace_fn: str):
         )
         total_opt_cost, opt_costs = sim_optimal(
             trace_fn,
-            max_group_size,
+            group_size,
             fallback_opt_cost
         )
         result_str = f"[{group_size}] {total_cost=}, {total_rand_cost=}, {total_idle_cost=}, {total_opt_cost=}\n"

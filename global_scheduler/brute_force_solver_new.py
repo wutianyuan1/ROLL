@@ -150,7 +150,7 @@ class BruteForceSolver:
                     [i for i in range(len(self.jobs))], num=max_search_steps
                 )
                 print(f"[N={len(self.jobs)}] Using random sampler to generate {max_search_steps} partitions, generated={len(all_possible_partitions)}")
-            best_partition_cost, best_partition, best_groups = float("inf"), None, None
+        best_partition_cost, best_partition, best_groups = float("inf"), None, None
         for partition in tqdm(all_possible_partitions):
             valid = True
             all_groups_cost = 0
