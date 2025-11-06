@@ -34,13 +34,16 @@ class BaselineScheduler:
     def add_job(self, job: Job):
         pass
 
-    def remove_job(self, job_id: str) -> None:
+    def remove_job(self, job_id: str):
         removed = False
+        utils = None
+        jg_id = None
         for group_id in self.job_groups:
             job_group = self.job_groups[group_id]
             for job in job_group.jobs:
                 if job.job_id == job_id:
                     job_group.jobs.remove(job)
+                    jg_id = job_group.group_id
                     removed = True
                     if len(job_group.jobs) != 0:
                         sim = WeaveSimulator(job_group.jobs)
@@ -66,6 +69,7 @@ class BaselineScheduler:
                 break
         if not removed:
             print(f"Remove failed: Job {job_id} does not exist.")
+        return jg_id, utils
 
 
 class RandomScheduler(BaselineScheduler):
