@@ -91,7 +91,7 @@ def sim_baseline(sched: BaselineScheduler, trace_fn: str, mannual_slo: float):
             job_type = job_info[3]
             t_rollout = profile_time['disagg'][job_type]['generate']
             t_train = profile_time['disagg'][job_type]['train']
-            job = Job(jid, t_rollout, t_train, mannual_slo)
+            job = Job(jid, t_rollout, t_train, mannual_slo())
             running_jobs[jid] = job
             # print(f"\n======== Insert Job {job.job_id} [{job.t_rollout=}, {job.t_train=}], {running_jobs=} ========")
             sched.add_job(job, t, job_type.startswith('32B'))
@@ -183,17 +183,22 @@ if __name__ == "__main__":
 
     colo_cost, colo_thpt = baseline(trace_fn, True)
     naived_cost, naived_thpt = baseline(trace_fn, False)
-    weave_cost, weave_slowdown = run_ablation_slo(trace_fn, 5, 1.3)
+    weave_cost, weave_slowdown = run_ablation_slo(trace_fn, 5, lambda: random.uniform(1.2, 1.5))
     numbers = list(weave_slowdown.values())
+    weave_thpt_normed = np.mean(list([1 / sld for sld in weave_slowdown.values()]))
+    colo_thpt_normed = np.mean([colo_thpt[jid] / naived_thpt[jid] for jid in colo_thpt])
+    print("Mean thpt:")
     print(f"Thpt: "
-          f"colo: {np.mean([colo_thpt[jid] / naived_thpt[jid] for jid in colo_thpt]):.4f}, "
-          f"naive-d: 1, "
-          f"weave: {np.mean(list([1 / sld for sld in weave_slowdown.values()])):.4f}")
+          f"colo: {colo_thpt_normed/weave_thpt_normed:.4f}, "
+          f"naive-d: {1/weave_thpt_normed:.4f}, "
+          f"weave: {1:.4f}")
     
     print("Duration-weighted mean thpt:")
+    weave_thpt_normed_w = np.sum(list([1 / sld  * jid_2_duration[jid] for jid, sld in weave_slowdown.items()])) / np.sum(list(jid_2_duration.values()))
+    colo_thpt_normed_w = np.sum([colo_thpt[jid] / naived_thpt[jid] * jid_2_duration[jid] for jid in colo_thpt]) / np.sum(list(jid_2_duration.values()))
     print(f"Thpt: "
-          f"colo: {np.sum([colo_thpt[jid] / naived_thpt[jid] * jid_2_duration[jid] for jid in colo_thpt]) / np.sum(list(jid_2_duration.values())):.4f}, "
-          f"naive-d: 1, "
-          f"weave: {np.sum(list([1 / sld  * jid_2_duration[jid] for jid, sld in weave_slowdown.items()])) / np.sum(list(jid_2_duration.values())):.4f}")
+          f"colo: {colo_thpt_normed_w/weave_thpt_normed_w:.4f}, "
+          f"naive-d: {1/weave_thpt_normed_w:.4f}, "
+          f"weave: {1:.4f}")
     
     print(f"Cost: colo: {colo_cost / weave_cost:.4f}, naive-d: {naived_cost / weave_cost:.4f}, weave: 1")
