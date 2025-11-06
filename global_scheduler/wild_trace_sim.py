@@ -173,11 +173,11 @@ def plot(colo_states: List[Tuple[int, int, datetime]],
             naived_avg_cost = naived_cost * (H800_NODE_USD_PER_HOUR / 3600) / timings[-1]
             weave_avg_cost = weave_cost * (H800_NODE_USD_PER_HOUR / 3600) / timings[-1]
             plt.hlines(colo_avg_cost, timings[0], timings[-1], colors='blue', linestyles='-.')
-            plt.hlines(naived_avg_cost, timings[0], timings[-1], colors='red', linestyles='-.')
-            plt.hlines(weave_avg_cost, timings[0], timings[-1], colors='black', linestyles='-.')
+            plt.hlines(naived_avg_cost, timings[0], timings[-1], colors='red', linestyles='--')
+            plt.hlines(weave_avg_cost, timings[0], timings[-1], colors='black', linestyles='-')
             print(f'Avg cost (K $/h): colo: {colo_avg_cost / 1000:.2f}, naive-d: {naived_avg_cost / 1000:.2f}, weave: {weave_avg_cost / 1000:.2f}')
         plt.plot(timings, [state[i] for state in colo_states], label='veRL', color='blue', linestyle='-.')
-        plt.plot(timings, [state[i] for state in naived_states], label='Naive-D', color='red', linestyle='-.')
+        plt.plot(timings, [state[i] for state in naived_states], label='Naive-D', color='red', linestyle='--')
         plt.plot(timings, [state[i] for state in weave_states], label='Weave', color='black', linestyle='-')
         # style
         plt.xticks(fontsize=14)
