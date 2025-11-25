@@ -211,16 +211,19 @@ class WeaveSimulator:
 
         return cleaned_rollout_busy_times, cleaned_train_busy_times, utils, total_time
 
-    def plot(self, n_meta_iters: int, export_path: Optional[str] = None):
+    def plot(self, n_meta_iters: int, color_settings: Dict, show_lgd: bool = False, export_path: Optional[str] = None):
         rollout_busy_times, train_busy_times, _, _ = self.simulate_run(n_meta_iters)
-        colors = sns.color_palette("Set3")
-        jobid_2_colors = {job.job_id: color for (job, color) in zip(self.jobs_map.values(), colors)}
+        jobid_2_rcolors = {job.job_id: color_settings[job.job_id][0] for job in self.jobs_map.values()}
+        jobid_2_tcolors = {job.job_id: color_settings[job.job_id][1] for job in self.jobs_map.values()}
+        jobid_2_hatches = {job.job_id: color_settings[job.job_id][2] for job in self.jobs_map.values()}
         ax = plt.gca()
         max_x = 0
 
         # dummy rect for showing the legend
-        for job in self.jobs_map.values():
-            ax.add_patch(patches.Rectangle((0, 0), 0, 0, edgecolor='black', facecolor=jobid_2_colors[job.job_id], label=job.job_id))
+        if show_lgd:
+            for job in self.jobs_map.values():
+                ax.add_patch(patches.Rectangle((0, 0), 0, 0, edgecolor='black', facecolor=jobid_2_rcolors[job.job_id], label=job.job_id + "-Rollout"))
+                ax.add_patch(patches.Rectangle((0, 0), 0, 0, edgecolor='black', facecolor=jobid_2_tcolors[job.job_id], label=job.job_id + "-Train"))
 
         y = 0
         all_clusters = []
@@ -230,11 +233,20 @@ class WeaveSimulator:
                 for (train_start, train_end) in cluster_utils[job_id]:
                     rectangle = patches.Rectangle(
                         (train_start, y), train_end - train_start, 1,
-                        edgecolor='black',
-                        facecolor=jobid_2_colors[job_id]
+                        edgecolor='white',
+                        facecolor=jobid_2_tcolors[job_id],
+                        hatch=jobid_2_hatches[job_id],
+                        zorder=0,
                     )
-                    max_x = max(max_x, train_end)
                     ax.add_patch(rectangle)
+                    rectangle = patches.Rectangle(
+                        (train_start, y), train_end - train_start, 1,
+                        edgecolor='black',
+                        facecolor='none',
+                        zorder=100,
+                    )
+                    ax.add_patch(rectangle)
+                    max_x = max(max_x, train_end)
             y += 1
             all_clusters.append(train_node)
 
@@ -244,15 +256,25 @@ class WeaveSimulator:
                 for (rollout_start, rollout_end) in cluster_utils[job_id]:
                     rectangle = patches.Rectangle(
                         (rollout_start, y), rollout_end - rollout_start, 1,
-                        edgecolor='black',
-                        facecolor=jobid_2_colors[job_id]
+                        edgecolor='white',
+                        facecolor=jobid_2_rcolors[job_id],
+                        hatch=jobid_2_hatches[job_id],
+                        zorder=0,
                     )
-                    max_x = max(max_x, train_end)
                     ax.add_patch(rectangle)
+                    rectangle = patches.Rectangle(
+                        (rollout_start, y), rollout_end - rollout_start, 1,
+                        edgecolor='black',
+                        facecolor='none',
+                        zorder=100,
+                    )
+                    ax.add_patch(rectangle)
+                    max_x = max(max_x, train_end)
             y += 1
             all_clusters.append(rollout_node)
 
-        plt.legend()
+        if show_lgd:
+            plt.legend()
         plt.xlim(0, max_x + 5)
         plt.ylim(0, y)
         plt.yticks(np.arange(y) + 0.5, all_clusters)
