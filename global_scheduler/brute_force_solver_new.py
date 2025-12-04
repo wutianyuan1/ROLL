@@ -133,23 +133,29 @@ class BruteForceSolver:
         canonical_partition = tuple(sorted([tuple(sorted(group)) for group in groups]))
         return canonical_partition
 
-    def solve(self, max_search_steps=20000):
-        if len(self.jobs) >= 10:
-            all_possible_partitions = self.get_random_partitions(
-                [i for i in range(len(self.jobs))], num=max_search_steps
-            )
-            print(f"[N={len(self.jobs)}] Using random sampler to generate {max_search_steps} partitions, generated={len(all_possible_partitions)}")
-        else:
+    def solve(self, max_search_steps=20000, force_enum_all=False):
+        if force_enum_all:
             all_possible_partitions = self.build_all_groups(
                 [i for i in range(len(self.jobs))]
             )
-            if len(all_possible_partitions) <= max_search_steps * 2:
-                print(f"[N={len(self.jobs)}] Using brute-force to enumerate all partitions, all={len(all_possible_partitions)}")
-            else:
+            print(f"[N={len(self.jobs)}, force_enum_all Enabled] Using brute-force to enumerate all partitions, all={len(all_possible_partitions)}")
+        else:
+            if len(self.jobs) >= 10:
                 all_possible_partitions = self.get_random_partitions(
                     [i for i in range(len(self.jobs))], num=max_search_steps
                 )
                 print(f"[N={len(self.jobs)}] Using random sampler to generate {max_search_steps} partitions, generated={len(all_possible_partitions)}")
+            else:
+                all_possible_partitions = self.build_all_groups(
+                    [i for i in range(len(self.jobs))]
+                )
+                if len(all_possible_partitions) <= max_search_steps * 2:
+                    print(f"[N={len(self.jobs)}] Using brute-force to enumerate all partitions, all={len(all_possible_partitions)}")
+                else:
+                    all_possible_partitions = self.get_random_partitions(
+                        [i for i in range(len(self.jobs))], num=max_search_steps
+                    )
+                    print(f"[N={len(self.jobs)}] Using random sampler to generate {max_search_steps} partitions, generated={len(all_possible_partitions)}")
         best_partition_cost, best_partition, best_groups = float("inf"), None, None
         for partition in tqdm(all_possible_partitions):
             valid = True

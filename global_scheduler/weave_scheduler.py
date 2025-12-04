@@ -103,7 +103,7 @@ class WeaveScheduler(BaselineScheduler):
                         self.util_trace[-1]['t'].pop(i)
                         break
 
-    def add_job(self, job: Job, timing: datetime, double_rollout_resource: bool):
+    def add_job(self, job: Job, timing: datetime = None, double_rollout_resource: bool = False):
         best_rollout_nodes, best_train_node, best_group, best_cost_delta, best_slowdowns, best_utils = None, None, None, float("inf"), None, None
         for job_group_name, job_group in self.job_groups.items():
             if len(job_group.jobs) >= self.max_group_size:

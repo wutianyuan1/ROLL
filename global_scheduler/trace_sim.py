@@ -1,8 +1,10 @@
 import time
 import os
 import sys
+import csv
 import random
 import numpy as np
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 from copy import deepcopy
 from datetime import datetime
@@ -265,11 +267,156 @@ def run_ablation_group_size(trace_fn: str):
         print(result_str)
     f.close()
 
+def measure_scheduling_overhead(
+    scheduler_class: type, 
+    test_points: int, 
+    job_generator: JobGenerator, 
+    max_group_size: int
+) -> List[Tuple[int, float]]:
+    """
+    Measures the overhead of adding one job to a scheduler that already contains
+    a certain number of jobs.
+
+    Args:
+        scheduler_class: The scheduler class to test (e.g., WeaveScheduler).
+        max_jobs: The maximum number of concurrent jobs to test up to.
+        job_generator: An instance of JobGenerator to create jobs.
+        max_group_size: The max_group_size parameter for the scheduler.
+
+    Returns:
+        A list of tuples, where each tuple is (num_existing_jobs, overhead_in_seconds).
+    """
+    print(f"--- Measuring overhead for {scheduler_class.__name__} ---")
+    overheads = []
+    
+    # We iterate test_points, and we are measuring the addition of the (i+1)-th job.
+    for num_existing_jobs in tqdm(test_points, desc=f"Testing {scheduler_class.__name__}"):
+        print(num_existing_jobs)
+        # 1. Setup: Create a scheduler and populate it with `num_existing_jobs`
+        sched = scheduler_class(per_time_cost, max_group_size)
+        for i in range(num_existing_jobs):
+            # Use unique job IDs for setup
+            background_job = job_generator.gen(f"bg_{i}")
+            sched.add_job(background_job)
+            
+        # 2. Prepare the new job to be timed
+        new_job = job_generator.gen(f"new_{num_existing_jobs}")
+            
+        # 3. Measure the overhead of adding the new job
+        start_time = time.perf_counter()
+        sched.add_job(new_job)
+        end_time = time.perf_counter()
+        
+        duration = end_time - start_time
+        overheads.append((num_existing_jobs, duration))
+        
+    return overheads
+
+
+def measure_opt_overhead(
+    max_jobs: int, 
+    job_generator: JobGenerator, 
+    max_group_size: int
+) -> List[Tuple[int, float]]:
+    """
+    Measures the overhead of the BruteForceSolver. The overhead is the total time
+    to find the optimal placement for a given number of jobs.
+    
+    Args:
+        max_jobs: The maximum number of jobs to solve for.
+        job_generator: An instance of JobGenerator to create jobs.
+        max_group_size: The max_group_size parameter for the solver.
+
+    Returns:
+        A list of tuples, where each tuple is (num_existing_jobs, overhead_in_seconds).
+        `num_existing_jobs` is `N-1` to be comparable with other schedulers measuring the N-th job.
+    """
+    print("--- Measuring overhead for BruteForceSolver (OPT) ---")
+    overheads = []
+
+    # Here, `num_total_jobs` is the number of jobs we ask the solver to optimize.
+    # This corresponds to adding the `num_total_jobs`-th job.
+    for num_total_jobs in tqdm(range(1, max_jobs + 1), desc="Testing OPT"):
+        # 1. Generate the full list of jobs for the solver
+        jobs_to_solve = [job_generator.gen(f"job_{i}") for i in range(num_total_jobs)]
+        
+        # 2. Instantiate the solver and measure the `solve` time
+        solver = BruteForceSolver(jobs_to_solve, max_group_size, n_iters=20)
+        
+        start_time = time.perf_counter()
+        # The "overhead" for OPT is the entire solving process
+        solver.solve(force_enum_all=True)
+        end_time = time.perf_counter()
+        
+        duration = end_time - start_time
+        
+        # `num_total_jobs - 1` is the number of "existing" jobs, to match the x-axis
+        # of the other schedulers.
+        overheads.append((num_total_jobs - 1, duration))
+        
+    return overheads
+
+def run_overhead_benchmark(output_csv_filename: str = "scheduler_overheads.csv"):
+    """Main function to run the overhead benchmark for all schedulers."""
+    
+    # --- Configuration ---
+    # NOTE: Keep MAX_JOBS_FOR_OPT small, as its complexity is exponential!
+    TEST_POINTS = [1, 3, 5, 7, 9, 11, 13, 15, 100, 500, 1000, 2000]  # For fast schedulers
+    MAX_JOBS_FOR_OPT = 13      # For BruteForceSolver
+    MAX_GROUP_SIZE = 3
+    
+    # Use the "all" job generator for diverse, realistic jobs
+    job_generator = JobGenerator(
+        rollout_dist_func=lambda: random.uniform(25, 600),
+        train_dist_func=lambda: random.uniform(25, 600),
+        slo_func=lambda: random.uniform(1.1, 2.0)
+    )
+    
+    schedulers_to_test = {
+        "WEAVE": WeaveScheduler,
+    }
+    
+    all_results = []
+    
+    # --- Run Benchmarks for Heuristic Schedulers ---
+    for name, scheduler_class in schedulers_to_test.items():
+        overheads = measure_scheduling_overhead(
+            scheduler_class, 
+            TEST_POINTS, 
+            job_generator, 
+            MAX_GROUP_SIZE
+        )
+        for num_jobs, duration in overheads:
+            all_results.append([name, num_jobs, duration])
+        
+    # --- Run Benchmark for OPT ---
+    opt_overheads = measure_opt_overhead(
+        MAX_JOBS_FOR_OPT, 
+        job_generator, 
+        MAX_GROUP_SIZE
+    )
+    for num_jobs, duration in opt_overheads:
+        all_results.append(["OPT (Brute-Force)", num_jobs, duration])
+    
+    # --- Save to CSV ---
+    try:
+        with open(output_csv_filename, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            # Write header
+            writer.writerow(['Scheduler', 'NumExistingJobs', 'OverheadSeconds'])
+            # Write data rows
+            writer.writerows(all_results)
+        print(f"Overhead benchmark results saved to {output_csv_filename}")
+    except IOError as e:
+        print(f"Error writing to CSV file {output_csv_filename}: {e}")
+
+
 if __name__ == "__main__":
     random.seed(2345)
     np.random.seed(2345)
-    max_group_size = 3
+    # max_group_size = 3
     # generate_jobs("global_scheduler/trace/philly_0_30000_20.trace", lambda: random.uniform(1.1, 2), "global_scheduler/trace/philly_0_30000_20_parsed")
     # run_ablation_types("global_scheduler/trace/philly_0_30000_20_parsed_{}.trace", max_group_size)
     # run_ablation_slo("global_scheduler/trace/philly_0_30000_20_parsed_all.trace", max_group_size)
-    run_ablation_group_size("global_scheduler/trace/philly_0_30000_20_parsed_all.trace")
+    # run_ablation_group_size("global_scheduler/trace/philly_0_30000_20_parsed_all.trace")
+    run_overhead_benchmark("./global_scheduler/scheduler_overheads.csv")
