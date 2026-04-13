@@ -109,7 +109,10 @@ def sim_baseline(sched: BaselineScheduler, trace_fn: str, mannual_slo: float = -
         else:
             del running_jobs[jid]
             # print(f"\n======== Delete Job {jid} [After {running_jobs=}] ========")
-            sched.remove_job(jid)
+            if isinstance(sched, WeaveScheduler):
+                sched.remove_job(jid, t)
+            else:
+                sched.remove_job(jid)
         last_state_cost = sum(sched.group_costs.values())
         last_state_invalid_jobs = deepcopy(sched.group_invalid_jobs)
         last_state_total_jobs = sched.total_running_jobs
@@ -220,11 +223,11 @@ def run_ablation_slo(trace_fn: str, max_group_size: int):
             trace_fn,
             mannual_slo=SLO
         )
-        total_opt_cost, opt_costs = sim_optimal(
-            trace_fn,
-            max_group_size,
-            fallback_opt_cost
-        )
+        total_opt_cost, opt_costs = 0, [] #sim_optimal(
+            # trace_fn,
+            # max_group_size,
+            # fallback_opt_cost
+        # )
         result_str = f"[{SLO}] {total_cost=}, {total_rand_cost=}, {total_idle_cost=}, {total_opt_cost=}\n"
         f.write(f"{SLO}--"
                 f"Weave|{total_cost}|{time_costs}|{time_invalid_jobs}||"
@@ -414,9 +417,9 @@ def run_overhead_benchmark(output_csv_filename: str = "scheduler_overheads.csv")
 if __name__ == "__main__":
     random.seed(2345)
     np.random.seed(2345)
-    # max_group_size = 3
+    max_group_size = 3
     # generate_jobs("global_scheduler/trace/philly_0_30000_20.trace", lambda: random.uniform(1.1, 2), "global_scheduler/trace/philly_0_30000_20_parsed")
     # run_ablation_types("global_scheduler/trace/philly_0_30000_20_parsed_{}.trace", max_group_size)
-    # run_ablation_slo("global_scheduler/trace/philly_0_30000_20_parsed_all.trace", max_group_size)
+    run_ablation_slo("global_scheduler/trace/philly_0_30000_20_parsed_all.trace", max_group_size)
     # run_ablation_group_size("global_scheduler/trace/philly_0_30000_20_parsed_all.trace")
-    run_overhead_benchmark("./global_scheduler/scheduler_overheads.csv")
+    # run_overhead_benchmark("./global_scheduler/scheduler_overheads.csv")

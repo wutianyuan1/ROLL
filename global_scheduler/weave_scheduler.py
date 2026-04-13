@@ -1,4 +1,5 @@
 from copy import deepcopy
+from itertools import combinations
 from typing import List, Dict, Callable, Tuple, Optional
 from datetime import datetime
 from global_scheduler.structs import Job, JobGroup
@@ -13,13 +14,15 @@ def per_time_cost(jobs: List[Job], num_rollout_nodes: int, train_busy_times: Dic
     valid = True
     invalid_jobs = {}
     for job in jobs:
-        num_iters = len(train_busy_times['TN'][job.job_id])
+        train_node = job.train_nodes[0]
+        num_iters = len(train_busy_times[train_node][job.job_id])
         if total_time / num_iters >= job.slo * (job.t_rollout + job.t_train):
             valid = False
             invalid_jobs[job.job_id] = (total_time / num_iters) / (job.t_rollout + job.t_train)
         total_working_time += num_iters * (job.t_rollout + job.t_train)
     # cost_per_time = total_time * (1 * train_cost + num_rollout_nodes * rollout_cost) / total_working_time
-    cost_per_time = 1 * train_cost + num_rollout_nodes * rollout_cost
+    num_train_nodes = len(train_busy_times)
+    cost_per_time = num_train_nodes * train_cost + num_rollout_nodes * rollout_cost
     if not return_invalid:
         return cost_per_time if valid else float("inf")
     else:
@@ -34,7 +37,8 @@ def get_slowdowns(jobs: List[Job], total_time: float, train_busy_times: Dict):
     '''
     jid_2_sld: Dict[str, float] = {}
     for job in jobs:
-        num_iters = len(train_busy_times['TN'][job.job_id])
+        train_node = job.train_nodes[0]
+        num_iters = len(train_busy_times[train_node][job.job_id])
         jid_2_sld[job.job_id] = (total_time / num_iters) / (job.t_rollout + job.t_train)
     return jid_2_sld
 
@@ -104,70 +108,63 @@ class WeaveScheduler(BaselineScheduler):
                         break
 
     def add_job(self, job: Job, timing: datetime = None, double_rollout_resource: bool = False):
+        rollout_width = max(2 if double_rollout_resource else 1, getattr(job, "rollout_width", 1))
+        train_width = getattr(job, "train_width", 1)
         best_rollout_nodes, best_train_node, best_group, best_cost_delta, best_slowdowns, best_utils = None, None, None, float("inf"), None, None
         for job_group_name, job_group in self.job_groups.items():
             if len(job_group.jobs) >= self.max_group_size:
                 continue
             all_rollout_nodes, all_train_nodes = job_group.all_rollout_nodes, job_group.all_train_nodes
+            if len(all_train_nodes) < train_width:
+                continue
 
             # Case-1: share train, share rollout (direct insert)
-            for train_node in all_train_nodes:
-                if double_rollout_resource and len(all_rollout_nodes) < 2:
-                    break
-                if not double_rollout_resource:
-                    candidate_rollout_nodes = [[node] for node in all_rollout_nodes]
-                else:
-                    candidate_rollout_nodes = [[all_rollout_nodes[i], all_rollout_nodes[j]] \
-                                               for i in range(len(all_rollout_nodes)) for j in range(i, len(all_rollout_nodes))]
+            if len(all_rollout_nodes) >= rollout_width:
+                candidate_rollout_nodes = [list(nodes) for nodes in combinations(all_rollout_nodes, rollout_width)]
+                train_nodes = list(all_train_nodes[:train_width])
                 for rollout_nodes in candidate_rollout_nodes:
                     tmp_job = deepcopy(job)
                     tmp_job.rollout_nodes = rollout_nodes
-                    tmp_job.train_nodes = [train_node]
+                    tmp_job.train_nodes = train_nodes
 
                     jobs_in_group = job_group.jobs + [tmp_job]
                     sim = WeaveSimulator(jobs_in_group)
                     rollout_busy_times, train_busy_times, utils, total_time = sim.simulate_run(self.simulate_steps)
                     cost = self.cost_func(jobs_in_group, len(all_rollout_nodes), train_busy_times, total_time, self.rollout_cost, self.train_cost)
                     slowdowns = get_slowdowns(jobs_in_group, total_time, train_busy_times)
-                    # print(f"Case-1, {rollout_node=}, {train_node=}, {cost=}")
                     if cost - self.group_costs[job_group_name] < best_cost_delta:
                         best_cost_delta = cost - self.group_costs[job_group_name]
                         best_rollout_nodes = rollout_nodes
-                        best_train_node = train_node
+                        best_train_node = train_nodes[0]
                         best_group = job_group
                         best_slowdowns = slowdowns
                         best_utils = utils
             # Case-2: share train, but scale-up to an individual rollout
-            for train_node in all_train_nodes:
-                if not double_rollout_resource:
-                    rollout_nodes = [job_group.next_rollout_node_id()]
-                else:
-                    rollout_nodes = [job_group.next_rollout_node_id(), job_group.next_rollout_node_id()]
+            train_nodes = list(all_train_nodes[:train_width])
+            if len(train_nodes) == train_width:
+                rollout_nodes = [job_group.next_rollout_node_id() for _ in range(rollout_width)]
                 tmp_job = deepcopy(job)
                 tmp_job.rollout_nodes = rollout_nodes
-                tmp_job.train_nodes = [train_node]
+                tmp_job.train_nodes = train_nodes
                 jobs_in_group = job_group.jobs + [tmp_job]
                 sim = WeaveSimulator(jobs_in_group)
                 rollout_busy_times, train_busy_times, utils, total_time = sim.simulate_run(self.simulate_steps)
-                num_scale_up_rollout_nodes = 1 if not double_rollout_resource else 2
+                num_scale_up_rollout_nodes = rollout_width
                 cost = self.cost_func(jobs_in_group, len(all_rollout_nodes) + num_scale_up_rollout_nodes, train_busy_times, total_time, self.rollout_cost, self.train_cost)
                 slowdowns = get_slowdowns(jobs_in_group, total_time, train_busy_times)
-                # print(f"Case-2, {rollout_node=}, {train_node=}, {cost=}")
                 if cost - self.group_costs[job_group_name] < best_cost_delta:
                     best_cost_delta = cost - self.group_costs[job_group_name]
                     best_rollout_nodes = rollout_nodes
-                    best_train_node = train_node
+                    best_train_node = train_nodes[0]
                     best_group = job_group
                     best_slowdowns = slowdowns
                     best_utils = utils
         # Case-3: form a new group
         tmp_job = deepcopy(job)
-        tmp_job.rollout_nodes = ["0"] if not double_rollout_resource else ["0", "1"]
-        tmp_job.train_nodes = ["TN"]
+        tmp_job.rollout_nodes = [str(i) for i in range(rollout_width)]
+        tmp_job.train_nodes = [f"TN{i}" for i in range(train_width)]
         job_group = JobGroup(self.next_group_id(), [tmp_job])
-        if double_rollout_resource:
-            # Manually set last_rollout_node_id 
-            job_group.last_rollout_node_id += 1
+        job_group.last_rollout_node_id = rollout_width - 1
         sim = WeaveSimulator(job_group.jobs)
         rollout_busy_times, train_busy_times, utils, total_time = sim.simulate_run(self.simulate_steps)
         cost = self.cost_func(job_group.jobs, len(job_group.all_rollout_nodes), train_busy_times, total_time, self.rollout_cost, self.train_cost)
@@ -187,7 +184,7 @@ class WeaveScheduler(BaselineScheduler):
         else:
             tmp_job = deepcopy(job)
             tmp_job.rollout_nodes = best_rollout_nodes
-            tmp_job.train_nodes = [best_train_node]
+            tmp_job.train_nodes = best_group.jobs[0].train_nodes[:train_width] if best_group.jobs else [best_train_node]
             self.last_group_id -= 1  # new group is not the best, recall the added group ID
             self.job_groups[best_group.group_id].jobs.append(tmp_job)
             self.group_costs[best_group.group_id] += best_cost_delta

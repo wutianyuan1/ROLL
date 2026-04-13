@@ -1,0 +1,34 @@
+{
+  "mixed": {
+    "static_weave": {
+      "total_cost": 17616464.0,
+      "average_slowdown": 1.301781958440447,
+      "average_job_slowdown": 1.2908656375114578,
+      "slo_violation_ratio": 0.1617588141025641,
+      "rollout_utilization": 0.7915196704827422,
+      "train_utilization": 0.5895743816401997,
+      "num_regroups": 0,
+      "num_regroup_checks": 0,
+      "planning_penalty_time": 0.0,
+      "planning_penalty_cost": 0.0,
+      "regroup_pause_time": 0.0,
+      "regroup_pause_cost": 0.0,
+      "completed_iterations": 59904
+    },
+    "dynamic_regroup": {
+      "total_cost": 16550367.666666659,
+      "average_slowdown": 1.1462723426087373,
+      "average_job_slowdown": 1.167356628352891,
+      "slo_violation_ratio": 0.03655457009115546,
+      "rollout_utilization": 0.941621810489324,
+      "train_utilization": 0.5996318734426018,
+      "num_regroups": 48,
+      "num_regroup_checks": 370,
+      "planning_penalty_time": 44400.0,
+      "planning_penalty_cost": 555640.0,
+      "regroup_pause_time": 5760.0,
+      "regroup_pause_cost": 89800.0,
+      "completed_iterations": 64944
+    }
+  }
+}

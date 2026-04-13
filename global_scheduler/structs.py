@@ -4,7 +4,10 @@ from typing import List, Optional
 class Job:
     def __init__(self, job_id: str, t_rollout: float, t_train: float, slo: float = None,
                  rollout_nodes: Optional[List[str]] = None,
-                 train_nodes: Optional[List[str]] = None):
+                 train_nodes: Optional[List[str]] = None,
+                 rollout_step_trace: Optional[List[float]] = None,
+                 rollout_width: int = 1,
+                 train_width: int = 1):
         self.job_id = job_id
         self.t_rollout = t_rollout
         self.t_train = t_train
@@ -14,9 +17,53 @@ class Job:
         # rollout/train nodes are available.
         self.rollout_nodes = rollout_nodes
         self.train_nodes = train_nodes
+        self.rollout_step_trace = rollout_step_trace
+        self.rollout_width = rollout_width
+        self.train_width = train_width
+        self.reset_runtime_state()
 
     def __repr__(self):
         return f"<Job[{self.job_id}] on {self.rollout_nodes}>"
+
+    def rollout_time_for_iteration(self, iteration_idx: int) -> float:
+        if not self.rollout_step_trace:
+            return self.t_rollout
+        trace_idx = min(iteration_idx, len(self.rollout_step_trace) - 1)
+        return self.rollout_step_trace[trace_idx]
+
+    def train_time_for_rollout(self, rollout_time: float) -> float:
+        if self.t_rollout == 0:
+            return self.t_train
+        return self.t_train * rollout_time / self.t_rollout
+
+    def train_time_for_iteration(self, iteration_idx: int) -> float:
+        return self.train_time_for_rollout(self.rollout_time_for_iteration(iteration_idx))
+
+    def solo_time_for_iteration(self, iteration_idx: int) -> float:
+        rollout_time = self.rollout_time_for_iteration(iteration_idx)
+        return rollout_time + self.train_time_for_rollout(rollout_time)
+
+    def reset_runtime_state(self):
+        self.iterations_done = 0
+        self.next_phase = "rollout"
+        self.active_phase = None
+        self.current_iter_rollout = None
+        self.current_iter_train = None
+        self.current_iter_solo = None
+        self.current_iter_start_time = None
+        self.completed_rollout_durations: List[float] = []
+        self.completed_train_durations: List[float] = []
+        self.completed_solo_durations: List[float] = []
+        self.completed_cycle_durations: List[float] = []
+        self.completed_iteration_end_times: List[float] = []
+
+    def restart_incomplete_iteration(self):
+        self.next_phase = "rollout"
+        self.active_phase = None
+        self.current_iter_rollout = None
+        self.current_iter_train = None
+        self.current_iter_solo = None
+        self.current_iter_start_time = None
 
 
 class JobGroup:
