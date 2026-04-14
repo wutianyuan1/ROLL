@@ -1,12 +1,13 @@
 import argparse
 import json
 import math
+import random
 from copy import deepcopy
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 from global_scheduler.brute_force_solver_new import BruteForceSolver
-from global_scheduler.baselines import BaselineScheduler
+from global_scheduler.baselines import BaselineScheduler, RandomScheduler, MostIdleScheduler
 from global_scheduler.new_simulator import WeaveSimulator
 from global_scheduler.structs import Job, JobGroup
 from global_scheduler.weave_scheduler import WeaveScheduler, per_time_cost
@@ -226,6 +227,7 @@ class DriftExperimentRunner:
             if first_regroup_delay_sec is None else first_regroup_delay_sec
         )
         self._trace_end_time = self.events[-1]['relative_time'] if self.events else 0.0
+        self.random_seed = 2345
 
     def _report_progress(self, strategy_name: str, event_idx: int, current_time: float,
                          active_jobs: Dict[str, Job], metrics: Dict[str, float],
@@ -365,9 +367,24 @@ class DriftExperimentRunner:
             'completed_iterations': total_iters,
         }
 
-    def run_strategy(self, dynamic_regroup: bool) -> Dict:
-        strategy_name = 'dynamic_regroup' if dynamic_regroup else 'static_weave'
-        scheduler = DriftWeaveScheduler(per_time_cost, max_group_size=self.max_group_size)
+    def _make_scheduler(self, strategy_name: str):
+        if strategy_name in {'static_weave', 'dynamic_regroup'}:
+            return DriftWeaveScheduler(per_time_cost, max_group_size=self.max_group_size)
+        if strategy_name == 'random':
+            return RandomScheduler(per_time_cost, max_group_size=self.max_group_size)
+        if strategy_name == 'most_idle':
+            return MostIdleScheduler(per_time_cost, max_group_size=self.max_group_size)
+        raise ValueError(f'Unknown strategy: {strategy_name}')
+
+    def run_strategy(self, strategy_name: str) -> Dict:
+        dynamic_regroup = strategy_name == 'dynamic_regroup'
+        scheduler = self._make_scheduler(strategy_name)
+        np_random = None
+        if strategy_name in {'random', 'most_idle'}:
+            import numpy as np
+            random.seed(self.random_seed)
+            np.random.seed(self.random_seed)
+            np_random = np
         self.current_scheduler_groups = scheduler.job_groups
         active_jobs: Dict[str, Job] = {}
         all_jobs: Dict[str, Job] = {}
@@ -405,10 +422,16 @@ class DriftExperimentRunner:
                     scheduler_job = self._make_scheduler_job(record)
                     active_jobs[record['job_id']] = runtime_job
                     all_jobs[record['job_id']] = runtime_job
-                    scheduler.add_job(scheduler_job)
+                    if strategy_name in {'static_weave', 'dynamic_regroup'}:
+                        scheduler.add_job(scheduler_job)
+                    else:
+                        scheduler.add_job(scheduler_job)
                 else:
                     active_jobs.pop(record['job_id'], None)
-                    scheduler.remove_job(record['job_id'], self.start_time)
+                    if strategy_name in {'static_weave', 'dynamic_regroup'}:
+                        scheduler.remove_job(record['job_id'], self.start_time)
+                    else:
+                        scheduler.remove_job(record['job_id'])
                 changed = True
                 event_idx += 1
             if changed:
@@ -491,9 +514,12 @@ class DriftExperimentRunner:
 
     def run_all(self) -> Dict:
         return {
-            'static_weave': self.run_strategy(dynamic_regroup=False),
-            'dynamic_regroup': self.run_strategy(dynamic_regroup=True),
+            'static_weave': self.run_strategy('static_weave'),
+            'dynamic_regroup': self.run_strategy('dynamic_regroup'),
         }
+
+    def run_selected(self, methods: List[str]) -> Dict:
+        return {method: self.run_strategy(method) for method in methods}
 
 
 if __name__ == '__main__':
@@ -521,6 +547,11 @@ if __name__ == '__main__':
     parser.add_argument('--exact-search-threshold', type=int, default=8)
     parser.add_argument('--max-search-steps', type=int, default=10000)
     parser.add_argument(
+        '--methods',
+        default='static_weave,dynamic_regroup',
+        help='Comma-separated methods from {static_weave,dynamic_regroup,random,most_idle}.',
+    )
+    parser.add_argument(
         '--scenarios',
         default='increasing,decreasing,mixed',
         help='Comma-separated scenarios to run from {increasing,decreasing,mixed}.',
@@ -532,6 +563,11 @@ if __name__ == '__main__':
     invalid = [item for item in scenarios if item not in allowed]
     if invalid:
         raise ValueError(f'Unsupported scenarios: {invalid}')
+    methods = [item.strip() for item in args.methods.split(',') if item.strip()]
+    allowed_methods = {'static_weave', 'dynamic_regroup', 'random', 'most_idle'}
+    invalid_methods = [item for item in methods if item not in allowed_methods]
+    if invalid_methods:
+        raise ValueError(f'Unsupported methods: {invalid_methods}')
 
     results = {}
     for scenario in scenarios:
@@ -549,7 +585,7 @@ if __name__ == '__main__':
             default_slo=args.default_slo,
             first_regroup_delay_sec=args.first_regroup_delay_sec,
         )
-        results[scenario] = runner.run_all()
+        results[scenario] = runner.run_selected(methods)
 
     with open(args.output, 'w') as f:
         json.dump(results, f, indent=2)

@@ -76,8 +76,8 @@ def plot_reference_drifts(reference_dir: str, output: str):
                 legend_handles.append(line)
                 legend_labels.append(TEMPLATE_LABELS[template_name])
 
-        ax.set_title(f'{model_label} Reference-Based Drift')
-        ax.set_xlabel('Iteration')
+        ax.set_title(f'{model_label} Drift Templates')
+        ax.set_xlabel('Steps')
         if '7' in model_label:
             ax.set_ylabel('Step Time (s)')
         ax.grid(True, alpha=0.25)

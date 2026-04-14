@@ -2,6 +2,7 @@ import numpy as np
 from copy import deepcopy
 from abc import abstractmethod
 from typing import List, Dict, Callable
+from itertools import combinations
 from global_scheduler.structs import Job, JobGroup
 from global_scheduler.new_simulator import WeaveSimulator
 
@@ -78,6 +79,8 @@ class RandomScheduler(BaselineScheduler):
         super().__init__(cost_func, max_group_size, simulate_steps, rollout_cost, train_cost)
     
     def add_job(self, job: Job):
+        rollout_width = getattr(job, "rollout_width", 1)
+        train_width = getattr(job, "train_width", 1)
         existing_gids = list(self.job_groups.keys())
         new_gid = self.next_group_id()
         possible_gids = [new_gid] + existing_gids
@@ -85,28 +88,35 @@ class RandomScheduler(BaselineScheduler):
         if target_grp_id == new_gid:
             # Place the job into a new group
             tmp_job = deepcopy(job)
-            tmp_job.rollout_nodes = ["0"]
-            tmp_job.train_nodes = ["TN"]
+            tmp_job.rollout_nodes = [str(i) for i in range(rollout_width)]
+            tmp_job.train_nodes = [f"TN{i}" for i in range(train_width)]
             job_group = JobGroup(target_grp_id, [tmp_job])
+            job_group.last_rollout_node_id = rollout_width - 1
             # Assign rollout and train nodes
-            best_rollout_node = job_group.all_rollout_nodes[0]
-            best_train_node = job_group.all_train_nodes[0]
+            best_rollout_node = tmp_job.rollout_nodes
+            best_train_node = tmp_job.train_nodes[0]
             # Record the new created group
             self.job_groups[job_group.group_id] = job_group
         else:
             self.last_group_id -= 1  # recall the new group id
             # Assign rollout and train nodes
             job_group = self.job_groups[target_grp_id]
-            new_rollout_node_id = str(job_group.last_rollout_node_id + 1)
-            possible_rollout_nodes = job_group.all_rollout_nodes + [new_rollout_node_id]
-            best_rollout_node = np.random.choice(possible_rollout_nodes)
-            best_train_node = job_group.all_train_nodes[0]
-            if best_rollout_node == new_rollout_node_id:
-                job_group.last_rollout_node_id += 1  # allocate a new rollout ID
+            possible_rollout_sets = []
+            if len(job_group.all_rollout_nodes) >= rollout_width:
+                possible_rollout_sets.extend([list(nodes) for nodes in combinations(job_group.all_rollout_nodes, rollout_width)])
+            new_rollout_nodes = [str(job_group.last_rollout_node_id + 1 + i) for i in range(rollout_width)]
+            possible_rollout_sets.append(new_rollout_nodes)
+            best_rollout_node = possible_rollout_sets[np.random.choice(len(possible_rollout_sets))]
+            if best_rollout_node == new_rollout_nodes:
+                job_group.last_rollout_node_id += rollout_width
+            train_nodes = job_group.all_train_nodes[:train_width]
+            if len(train_nodes) < train_width:
+                train_nodes = [f"TN{i}" for i in range(train_width)]
+            best_train_node = train_nodes[0]
             # Place the job into a new group
             tmp_job = deepcopy(job)
-            tmp_job.rollout_nodes = [best_rollout_node]
-            tmp_job.train_nodes = [best_train_node]
+            tmp_job.rollout_nodes = list(best_rollout_node)
+            tmp_job.train_nodes = list(train_nodes)
             # Add the job into the existing group
             self.job_groups[job_group.group_id].jobs.append(tmp_job)
         sim = WeaveSimulator(job_group.jobs)
@@ -128,6 +138,8 @@ class MostIdleScheduler(BaselineScheduler):
         super().__init__(cost_func, max_group_size, simulate_steps, rollout_cost, train_cost)
     
     def add_job(self, job: Job):
+        rollout_width = getattr(job, "rollout_width", 1)
+        train_width = getattr(job, "train_width", 1)
         existing_gids = list(self.job_groups.keys())
         new_gid = self.next_group_id()
         possible_gids = [new_gid] + existing_gids
@@ -136,12 +148,13 @@ class MostIdleScheduler(BaselineScheduler):
         if target_grp_id == new_gid:
             # Place the job into a new group
             tmp_job = deepcopy(job)
-            tmp_job.rollout_nodes = ["0"]
-            tmp_job.train_nodes = ["TN"]
+            tmp_job.rollout_nodes = [str(i) for i in range(rollout_width)]
+            tmp_job.train_nodes = [f"TN{i}" for i in range(train_width)]
             job_group = JobGroup(target_grp_id, [tmp_job])
+            job_group.last_rollout_node_id = rollout_width - 1
             # Assign rollout and train nodes
-            best_rollout_node = job_group.all_rollout_nodes[0]
-            best_train_node = job_group.all_train_nodes[0]
+            best_rollout_node = tmp_job.rollout_nodes
+            best_train_node = tmp_job.train_nodes[0]
             # Record the new created group
             self.job_groups[job_group.group_id] = job_group
         else:
@@ -162,16 +175,18 @@ class MostIdleScheduler(BaselineScheduler):
                     min_util_rollout_node = node
             # For the most idle group, find the most idle rollout node
             # Check if it is too full. If so, create a new rollout node.
-            if min_rutil >= 0.8:
-                best_rollout_node = str(job_group.last_rollout_node_id + 1)
-                job_group.last_rollout_node_id += 1  # allocate a new rollout ID
+            if min_rutil >= 0.8 or rollout_width > 1:
+                best_rollout_node = [job_group.next_rollout_node_id() for _ in range(rollout_width)]
             else:
-                best_rollout_node = min_util_rollout_node
-            best_train_node = job_group.all_train_nodes[0]
+                best_rollout_node = [min_util_rollout_node]
+            train_nodes = job_group.all_train_nodes[:train_width]
+            if len(train_nodes) < train_width:
+                train_nodes = [f"TN{i}" for i in range(train_width)]
+            best_train_node = train_nodes[0]
             # Place the job into a new group
             tmp_job = deepcopy(job)
-            tmp_job.rollout_nodes = [best_rollout_node]
-            tmp_job.train_nodes = [best_train_node]
+            tmp_job.rollout_nodes = list(best_rollout_node)
+            tmp_job.train_nodes = list(train_nodes)
             # Add the job into the existing group
             self.job_groups[job_group.group_id].jobs.append(tmp_job)
         sim = WeaveSimulator(job_group.jobs)
