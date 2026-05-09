@@ -1,0 +1,1 @@
+MAX_STEPS=5 ROLLOUT_BATCH_SIZE=192 N=1 GA_STEPS=8 RESPONSE_LENGTH=8192 HF_ENDPOINT=https://hf-mirror.com VLLM_USE_V1=0 PYTHONPATH=. python examples/start_rlvr_pipeline.py --config_path qwen2.5-7B-rlvr_megatron --config_name rlvr_config_colo

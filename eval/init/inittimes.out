@@ -1,0 +1,134 @@
+## 8B Agentic
+Para:
+2025/10/20 11:21:27 | root | [Scheduler] connected to redis.
+2025/10/20 11:21:27 | root | **** Unexpected type: subscribe
+2025/10/20 11:21:53 | root | [Router] event: Event(job=job1, type=created), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 11:21:53 | root | [Scheduler] will execute [Event(job=job1, type=status, value=initializing)]
+2025/10/20 11:24:41 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H20,0,1,2,3,4,5,6,7), available_devices_before: (gen)[] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+
+Seq:
+2025/10/20 10:50:31 | root | [Scheduler] connected to redis.
+2025/10/20 10:50:31 | root | **** Unexpected type: subscribe
+2025/10/20 10:50:54 | root | [Router] event: Event(job=job1, type=created), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 10:50:55 | root | [Scheduler] will execute [Event(job=job1, type=status, value=initializing)]
+2025/10/20 10:54:11 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H20,0,1,2,3,4,5,6,7), available_devices_before: (gen)[] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+
+## 14B Agentic
+Para:
+2025/10/20 11:37:53 | root | [Scheduler] connected to redis.
+2025/10/20 11:37:53 | root | **** Unexpected type: subscribe
+2025/10/20 11:38:37 | root | [Router] event: Event(job=job1, type=created), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 11:38:37 | root | [Scheduler] will execute [Event(job=job1, type=status, value=initializing)]
+2025/10/20 11:41:56 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H20,0,1,2,3,4,5,6,7), available_devices_before: (gen)[] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 11:41:56 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H800,0,1,2,3,4,5,6,7), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 11:41:56 | root | [Router] event: Event(job=job1, phase=init, type=done), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+
+Seq:
+2025/10/20 11:44:05 | root | [Scheduler] connected to redis.
+2025/10/20 11:44:05 | root | **** Unexpected type: subscribe
+2025/10/20 11:46:25 | root | [Router] event: Event(job=job1, type=created), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 11:46:25 | root | [Scheduler] will execute [Event(job=job1, type=status, value=initializing)]
+2025/10/20 11:50:17 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H20,0,1,2,3,4,5,6,7), available_devices_before: (gen)[] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 11:50:17 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H800,0,1,2,3,4,5,6,7), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 11:50:17 | root | [Router] event: Event(job=job1, phase=init, type=done), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+
+
+## 32B RLVR
+Para:
+2025/10/20 13:02:23 | root | [Scheduler] connected to redis.
+2025/10/20 13:02:23 | root | **** Unexpected type: subscribe
+2025/10/20 13:03:37 | root | [Router] event: Event(job=job1, type=created), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 13:03:37 | root | [Scheduler] will execute [Event(job=job1, type=status, value=initializing)]
+2025/10/20 13:07:52 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H20,0,1,2,3,4,5,6,7), available_devices_before: (gen)[] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 13:07:52 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H800,0,1,2,3,4,5,6,7), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 13:07:52 | root | [Router] event: Event(job=job1, phase=init, type=done), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 13:07:52 | root | [ResourceManager] Alloc worker: [0, 1]
+2025/10/20 13:07:52 | root | [ResourceManager] Alloc worker: [2, 3]
+2025/10/20 13:07:52 | root | [ResourceManager] Alloc worker: [4, 5]
+2025/10/20 13:07:52 | root | [ResourceManager] Alloc worker: [6, 7]
+2025/10/20 13:07:52 | root | [Scheduler] will execute [Event(job=job1, phase=generate, type=status, value=running), Event(job=job1, phase=generate, worker=0, type=status, value=running), Event(job=job1, phase=generate, worker=1, type=status, value=running), Event(job=job1, phase=generate, worker=2, type=status, value=running), Event(job=job1, phase=generate, worker=3, type=status, value=running)]
+
+
+Seq:
+2025/10/20 12:09:36 | root | [Scheduler] connected to redis.
+2025/10/20 12:09:36 | root | **** Unexpected type: subscribe
+2025/10/20 12:09:57 | root | [Router] event: Event(job=job1, type=created), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 12:09:57 | root | [Scheduler] will execute [Event(job=job1, type=status, value=initializing)]
+2025/10/20 12:16:56 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H20,0,1,2,3,4,5,6,7), available_devices_before: (gen)[] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 12:16:56 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H800,0,1,2,3,4,5,6,7), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 12:16:56 | root | [Router] event: Event(job=job1, phase=init, type=done), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 12:16:56 | root | [ResourceManager] Alloc worker: [0, 1]
+2025/10/20 12:16:56 | root | [ResourceManager] Alloc worker: [2, 3]
+2025/10/20 12:16:56 | root | [ResourceManager] Alloc worker: [4, 5]
+2025/10/20 12:16:56 | root | [ResourceManager] Alloc worker: [6, 7]
+2025/10/20 12:16:56 | root | [Scheduler] will execute [Event(job=job1, phase=generate, type=status, value=running), Event(job=job1, phase=generate, worker=0, type=status, value=running), Event(job=job1, phase=generate, worker=1, type=status, value=running), Event(job=job1, phase=generate, worker=2, type=status, value=running), Event(job=job1, phase=generate, worker=3, type=status, value=running)]
+
+## 14B RLVR
+Para:
+2025/10/20 12:44:04 | root | [Scheduler] connected to redis.
+2025/10/20 12:44:04 | root | **** Unexpected type: subscribe
+2025/10/20 12:44:24 | root | [Router] event: Event(job=job1, type=created), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 12:44:24 | root | [Scheduler] will execute [Event(job=job1, type=status, value=initializing)]
+2025/10/20 12:48:32 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H20,0,1,2,3,4,5,6,7), available_devices_before: (gen)[] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 12:48:32 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H800,0,1,2,3,4,5,6,7), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 12:48:32 | root | [Router] event: Event(job=job1, phase=init, type=done), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 12:48:32 | root | [ResourceManager] Alloc worker: [0]
+2025/10/20 12:48:32 | root | [ResourceManager] Alloc worker: [1]
+2025/10/20 12:48:32 | root | [ResourceManager] Alloc worker: [2]
+2025/10/20 12:48:32 | root | [ResourceManager] Alloc worker: [3]
+2025/10/20 12:48:32 | root | [ResourceManager] Alloc worker: [4]
+2025/10/20 12:48:32 | root | [ResourceManager] Alloc worker: [5]
+2025/10/20 12:48:32 | root | [ResourceManager] Alloc worker: [6]
+2025/10/20 12:48:32 | root | [ResourceManager] Alloc worker: [7]
+
+Seq:
+2025/10/20 12:52:32 | root | [Scheduler] connected to redis.
+2025/10/20 12:52:32 | root | **** Unexpected type: subscribe
+2025/10/20 12:53:55 | root | [Router] event: Event(job=job1, type=created), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 12:53:55 | root | [Scheduler] will execute [Event(job=job1, type=status, value=initializing)]
+2025/10/20 12:59:39 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H20,0,1,2,3,4,5,6,7), available_devices_before: (gen)[] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 12:59:39 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H800,0,1,2,3,4,5,6,7), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 12:59:39 | root | [Router] event: Event(job=job1, phase=init, type=done), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 12:59:39 | root | [ResourceManager] Alloc worker: [0]
+2025/10/20 12:59:39 | root | [ResourceManager] Alloc worker: [1]
+2025/10/20 12:59:39 | root | [ResourceManager] Alloc worker: [2]
+2025/10/20 12:59:39 | root | [ResourceManager] Alloc worker: [3]
+2025/10/20 12:59:39 | root | [ResourceManager] Alloc worker: [4]
+2025/10/20 12:59:39 | root | [ResourceManager] Alloc worker: [5]
+2025/10/20 12:59:39 | root | [ResourceManager] Alloc worker: [6]
+2025/10/20 12:59:39 | root | [ResourceManager] Alloc worker: [7]
+
+## 7B RLVR
+Para:
+2025/10/20 13:18:06 | root | [Scheduler] connected to redis.
+2025/10/20 13:18:06 | root | **** Unexpected type: subscribe
+2025/10/20 13:18:26 | root | [Router] event: Event(job=job1, type=created), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 13:18:26 | root | [Scheduler] will execute [Event(job=job1, type=status, value=initializing)]
+2025/10/20 13:22:10 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H20,0,1,2,3,4,5,6,7), available_devices_before: (gen)[] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 13:22:10 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H800,0,1,2,3,4,5,6,7), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 13:22:10 | root | [Router] event: Event(job=job1, phase=init, type=done), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 13:22:11 | root | [ResourceManager] Alloc worker: [0]
+2025/10/20 13:22:11 | root | [ResourceManager] Alloc worker: [1]
+2025/10/20 13:22:11 | root | [ResourceManager] Alloc worker: [2]
+2025/10/20 13:22:11 | root | [ResourceManager] Alloc worker: [3]
+2025/10/20 13:22:11 | root | [ResourceManager] Alloc worker: [4]
+2025/10/20 13:22:11 | root | [ResourceManager] Alloc worker: [5]
+2025/10/20 13:22:11 | root | [ResourceManager] Alloc worker: [6]
+2025/10/20 13:22:11 | root | [ResourceManager] Alloc worker: [7]
+
+Seq:
+2025/10/20 13:23:50 | root | [Scheduler] connected to redis.
+2025/10/20 13:23:50 | root | **** Unexpected type: subscribe
+2025/10/20 13:24:27 | root | [Router] event: Event(job=job1, type=created), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 13:24:27 | root | [Scheduler] will execute [Event(job=job1, type=status, value=initializing)]
+2025/10/20 13:29:13 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H20,0,1,2,3,4,5,6,7), available_devices_before: (gen)[] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 13:29:13 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H800,0,1,2,3,4,5,6,7), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 13:29:13 | root | [Router] event: Event(job=job1, phase=init, type=done), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+2025/10/20 13:29:14 | root | [ResourceManager] Alloc worker: [0]
+2025/10/20 13:29:14 | root | [ResourceManager] Alloc worker: [1]
+2025/10/20 13:29:14 | root | [ResourceManager] Alloc worker: [2]
+2025/10/20 13:29:14 | root | [ResourceManager] Alloc worker: [3]
+2025/10/20 13:29:14 | root | [ResourceManager] Alloc worker: [4]
+2025/10/20 13:29:14 | root | [ResourceManager] Alloc worker: [5]
+2025/10/20 13:29:14 | root | [ResourceManager] Alloc worker: [6]
+2025/10/20 13:29:14 | root | [ResourceManager] Alloc worker: [7]

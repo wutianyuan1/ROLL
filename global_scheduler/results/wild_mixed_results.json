@@ -1,0 +1,98 @@
+{
+  "mixed": {
+    "static_weave": {
+      "total_cost": 17489820.33333333,
+      "average_slowdown": 1.1313178305975409,
+      "average_job_slowdown": 1.1481030234154588,
+      "slo_violation_ratio": 0.043537385598342256,
+      "rollout_utilization": 0.8272356244943486,
+      "train_utilization": 0.6487062978411788,
+      "num_regroups": 0,
+      "num_regroup_checks": 0,
+      "planning_penalty_time": 0.0,
+      "planning_penalty_cost": 0.0,
+      "regroup_pause_time": 0.0,
+      "regroup_pause_cost": 0.0,
+      "completed_iterations": 46328
+    },
+    "dynamic_regroup": {
+      "total_cost": 16199214.348110432,
+      "average_slowdown": 1.1338492123991657,
+      "average_job_slowdown": 1.1371279635942877,
+      "slo_violation_ratio": 0.01332174179856299,
+      "rollout_utilization": 0.8764157424539114,
+      "train_utilization": 0.602807928112979,
+      "num_regroups": 35,
+      "num_regroup_checks": 370,
+      "planning_penalty_time": 111000.0,
+      "planning_penalty_cost": 1357803.375330562,
+      "regroup_pause_time": 10500.0,
+      "regroup_pause_cost": 135400.0,
+      "completed_iterations": 39109
+    }
+  },
+  "increasing": {
+    "static_weave": {
+      "total_cost": 17489820.33333333,
+      "average_slowdown": 1.1260338054971486,
+      "average_job_slowdown": 1.1392146081917636,
+      "slo_violation_ratio": 0.013620778732797895,
+      "rollout_utilization": 0.8441180703457771,
+      "train_utilization": 0.6511286013909574,
+      "num_regroups": 0,
+      "num_regroup_checks": 0,
+      "planning_penalty_time": 0.0,
+      "planning_penalty_cost": 0.0,
+      "regroup_pause_time": 0.0,
+      "regroup_pause_cost": 0.0,
+      "completed_iterations": 42582
+    },
+    "dynamic_regroup": {
+      "total_cost": 15739464.000000002,
+      "average_slowdown": 1.1437267413328422,
+      "average_job_slowdown": 1.1474065814786434,
+      "slo_violation_ratio": 0.003999773062521275,
+      "rollout_utilization": 0.9033310404715835,
+      "train_utilization": 0.6146693823187995,
+      "num_regroups": 31,
+      "num_regroup_checks": 370,
+      "planning_penalty_time": 111000.0,
+      "planning_penalty_cost": 1318700.0,
+      "regroup_pause_time": 9300.0,
+      "regroup_pause_cost": 119600.0,
+      "completed_iterations": 35252
+    }
+  },
+  "decreasing": {
+    "static_weave": {
+      "total_cost": 17489820.33333333,
+      "average_slowdown": 1.129642272886939,
+      "average_job_slowdown": 1.144953812566022,
+      "slo_violation_ratio": 0.013456090651558074,
+      "rollout_utilization": 0.8169210130713318,
+      "train_utilization": 0.6526112256094727,
+      "num_regroups": 0,
+      "num_regroup_checks": 0,
+      "planning_penalty_time": 0.0,
+      "planning_penalty_cost": 0.0,
+      "regroup_pause_time": 0.0,
+      "regroup_pause_cost": 0.0,
+      "completed_iterations": 50832
+    },
+    "dynamic_regroup": {
+      "total_cost": 15830938.999999996,
+      "average_slowdown": 1.1403026198526904,
+      "average_job_slowdown": 1.1477180701120095,
+      "slo_violation_ratio": 0.008810883202932262,
+      "rollout_utilization": 0.8736292394540578,
+      "train_utilization": 0.6325482607804263,
+      "num_regroups": 28,
+      "num_regroup_checks": 370,
+      "planning_penalty_time": 111000.0,
+      "planning_penalty_cost": 1325500.0,
+      "regroup_pause_time": 8400.0,
+      "regroup_pause_cost": 111800.0,
+      "completed_iterations": 42561
+    }
+  }
+}

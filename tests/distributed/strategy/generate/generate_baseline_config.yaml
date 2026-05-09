@@ -1,0 +1,73 @@
+
+hydra:
+  run:
+    dir: .
+  output_subdir: null
+
+exp_name: "generate_baseline"
+seed: 42
+logging_dir: ./output/logs
+output_dir: ./output
+
+track_with: stdout
+
+rollout_batch_size: 32
+prompt_length: 512
+response_length: 512
+generate_opt_level: 1
+is_num_return_sequences_expand: true
+generate_redundancy_num: 0
+
+pretrain: Qwen/Qwen2.5-7B-Instruct
+
+actor_train:
+  data_args:
+    template: qwen2_5
+    file_name: data/comparison_gpt4_data_zh.json
+    dataset_dir: data
+    prompt: instruction
+    interleave_probs: "1.0"
+    max_samples: ${rollout_batch_size}
+
+actor_infer:
+  model_args:
+    flash_attn: fa2
+    disable_gradient_checkpointing: true
+    dtype: bf16
+  generating_args:
+    max_new_tokens: ${response_length}
+    top_p: 0.99
+    top_k: 100
+    num_beams: 1
+    temperature: 0.01
+    num_return_sequences: 2
+  data_args:
+    template: qwen2_5
+  strategy_args:
+    strategy_name: vllm
+    strategy_config:
+      gpu_memory_utilization: 0.8
+      tensor_parallel_size: 2
+      load_format: auto
+  device_mapping: list(range(0,8))
+  infer_batch_size: 16
+
+reference:
+  model_args:
+    flash_attn: fa2
+    disable_gradient_checkpointing: true
+    dtype: bf16
+  generating_args:
+    max_new_tokens: ${response_length}
+    top_p: 0.99
+    top_k: 100
+    num_beams: 1
+    temperature: 0.01
+    num_return_sequences: 2
+  data_args:
+    template: qwen2_5
+  strategy_args:
+    strategy_name: hf_infer
+    strategy_config: ~
+  device_mapping: list(range(0,8))
+  infer_batch_size: 16

@@ -1,0 +1,35 @@
+{"time": 1776285890.2394612, "job": "E", "iter": 0, "event": "section_enter", "phase": "generate"}
+{"time": 1776285894.085811, "job": "E", "iter": 0, "event": "section_exit", "phase": "generate"}
+{"time": 1776285894.1112802, "job": "E", "iter": 0, "event": "section_enter", "phase": "train"}
+{"time": 1776285894.763798, "job": "E", "iter": 0, "event": "section_exit", "phase": "train"}
+{"time": 1776285894.764731, "job": "E", "iter": 1, "event": "iteration_complete", "completed_iter": 0}
+{"time": 1776285894.789085, "job": "E", "iter": 1, "event": "section_enter", "phase": "generate"}
+{"time": 1776285898.634017, "job": "E", "iter": 1, "event": "section_exit", "phase": "generate"}
+{"time": 1776285898.6612532, "job": "E", "iter": 1, "event": "section_enter", "phase": "train"}
+{"time": 1776285899.3137002, "job": "E", "iter": 1, "event": "section_exit", "phase": "train"}
+{"time": 1776285899.315615, "job": "E", "iter": 2, "event": "iteration_complete", "completed_iter": 1}
+{"time": 1776285899.341394, "job": "E", "iter": 2, "event": "section_enter", "phase": "generate"}
+{"time": 1776285901.263571, "job": "E", "iter": 2, "event": "section_crash", "phase": "generate", "elapsed": 1.92}
+{"time": 1776285901.26664, "job": "E", "iter": 2, "event": "job_exit_after_crash", "phase": "generate"}
+{"time": 1776285912.0848541, "job": "E", "iter": 2, "event": "job_recovered"}
+{"time": 1776285912.106503, "job": "E", "iter": 2, "event": "section_enter", "phase": "generate"}
+{"time": 1776285915.948437, "job": "E", "iter": 2, "event": "section_exit", "phase": "generate"}
+{"time": 1776285916.194937, "job": "E", "iter": 2, "event": "section_enter", "phase": "train"}
+{"time": 1776285916.852313, "job": "E", "iter": 2, "event": "section_exit", "phase": "train"}
+{"time": 1776285916.854659, "job": "E", "iter": 3, "event": "iteration_complete", "completed_iter": 2}
+{"time": 1776285916.8784761, "job": "E", "iter": 3, "event": "section_enter", "phase": "generate"}
+{"time": 1776285920.721515, "job": "E", "iter": 3, "event": "section_exit", "phase": "generate"}
+{"time": 1776285920.822647, "job": "E", "iter": 3, "event": "section_enter", "phase": "train"}
+{"time": 1776285921.477984, "job": "E", "iter": 3, "event": "section_exit", "phase": "train"}
+{"time": 1776285921.48033, "job": "E", "iter": 4, "event": "iteration_complete", "completed_iter": 3}
+{"time": 1776285921.5066292, "job": "E", "iter": 4, "event": "section_enter", "phase": "generate"}
+{"time": 1776285925.354647, "job": "E", "iter": 4, "event": "section_exit", "phase": "generate"}
+{"time": 1776285925.4435232, "job": "E", "iter": 4, "event": "section_enter", "phase": "train"}
+{"time": 1776285926.096716, "job": "E", "iter": 4, "event": "section_exit", "phase": "train"}
+{"time": 1776285926.098164, "job": "E", "iter": 5, "event": "iteration_complete", "completed_iter": 4}
+{"time": 1776285926.125142, "job": "E", "iter": 5, "event": "section_enter", "phase": "generate"}
+{"time": 1776285929.968487, "job": "E", "iter": 5, "event": "section_exit", "phase": "generate"}
+{"time": 1776285930.04515, "job": "E", "iter": 5, "event": "section_enter", "phase": "train"}
+{"time": 1776285930.699011, "job": "E", "iter": 5, "event": "section_exit", "phase": "train"}
+{"time": 1776285930.700476, "job": "E", "iter": 6, "event": "iteration_complete", "completed_iter": 5}
+{"time": 1776285930.701335, "job": "E", "iter": 6, "event": "job_completed", "completed_iters": 6}

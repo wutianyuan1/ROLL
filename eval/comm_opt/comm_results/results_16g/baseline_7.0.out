@@ -1,0 +1,52 @@
+Initialized process rank 0 of 16 on device cuda:0.
+Initialized process rank 1 of 16 on device cuda:1.
+Initialized process rank 2 of 16 on device cuda:2.
+Initialized process rank 4 of 16 on device cuda:4.
+Initialized process rank 7 of 16 on device cuda:7.
+Initialized process rank 5 of 16 on device cuda:5.
+Initialized process rank 6 of 16 on device cuda:6.
+Initialized process rank 3 of 16 on device cuda:3.
+[Rank 1] Role: SENDER. Peer: Rank 9
+[Rank 4] Role: SENDER. Peer: Rank 12
+[Rank 7] Role: SENDER. Peer: Rank 15
+[Rank 6] Role: SENDER. Peer: Rank 14
+
+==================================================
+Model Size: 7.00 Billion Parameters
+Total Size: 13351.44 MB
+==================================================
+
+[Rank 0] Role: SENDER. Peer: Rank 8
+[Rank 5] Role: SENDER. Peer: Rank 13
+[Rank 2] Role: SENDER. Peer: Rank 10
+[Rank 3] Role: SENDER. Peer: Rank 11
+[Rank 5] -> [Rank 13] Transfer completed in 5.3764 seconds.
+[Rank 0] -> [Rank 8] Transfer completed in 5.8026 seconds.
+[Rank 3] -> [Rank 11] Transfer completed in 6.2730 seconds.
+[Rank 7] -> [Rank 15] Transfer completed in 6.2816 seconds.
+[Rank 2] -> [Rank 10] Transfer completed in 6.6880 seconds.
+[Rank 6] -> [Rank 14] Transfer completed in 6.8757 seconds.
+[Rank 1] -> [Rank 9] Transfer completed in 7.1157 seconds.
+[Rank 4] -> [Rank 12] Transfer completed in 7.4821 seconds.
+
+==================================================
+          TRANSFER SPEED RESULTS
+==================================================
+Model Size per Transfer: 13351.44 MB
+--------------------------------------------------
+Max Time (Slowest Transfer): 7.4821 s
+Min Time (Fastest Transfer): 5.3764 s
+Mean Time:                   6.4869 s
+Median Time:                 6.4848 s
+--------------------------------------------------
+Mean Throughput:             16.25 Gbps
+==================================================
+
+[0] Cleaned up and finished.
+[7] Cleaned up and finished.
+[6] Cleaned up and finished.
+[5] Cleaned up and finished.
+[1] Cleaned up and finished.
+[2] Cleaned up and finished.
+[4] Cleaned up and finished.
+[3] Cleaned up and finished.

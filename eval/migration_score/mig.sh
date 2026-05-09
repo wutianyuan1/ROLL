@@ -1,0 +1,1 @@
+RATIO=0.875 ROLLOUT_BATCH_SIZE=32 N=8 GA_STEPS=32 RESPONSE_LENGTH=8192 HF_ENDPOINT=https://hf-mirror.com VLLM_USE_V1=0 PYTHONPATH=. python examples/start_rlvr_pipeline.py --config_path migration_score --config_name rlvr_config_mig

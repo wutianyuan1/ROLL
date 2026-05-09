@@ -1,0 +1,167 @@
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:40:28] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 12764] wrap TestActor to ray.remote()
+[36m(pid=13023)[0m add logger: log_rank_test_cluster-0_0_1
+[36m(pid=13023)[0m Created or verified log directory: ./output/logs
+[36m(pid=13023)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_1.log
+[36m(TestActor(test_actor) pid=13023)[0m test_actor
+create RM: 0.7161495685577393, create cluster: 3.2809228897094727, print 0.060590505599975586
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:40:36] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 13177] wrap TestActor to ray.remote()
+[36m(pid=13436)[0m add logger: log_rank_test_cluster-0_0_2
+[36m(pid=13436)[0m Created or verified log directory: ./output/logs
+[36m(pid=13436)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_2.log
+create RM: 0.7213246822357178, create cluster: 6.351763963699341, print 0.08424067497253418
+[36m(TestActor(test_actor) pid=13436)[0m test_actor
+[36m(pid=13589)[0m add logger: log_rank_test_cluster-1_1_2
+[36m(pid=13589)[0m Created or verified log directory: ./output/logs
+[36m(pid=13589)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-1_1_2.log
+[36m(TestActor(test_actor) pid=13589)[0m test_actor
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:40:46] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 13744] wrap TestActor to ray.remote()
+[36m(pid=14003)[0m add logger: log_rank_test_cluster-0_0_4
+[36m(pid=14003)[0m Created or verified log directory: ./output/logs
+[36m(pid=14003)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_4.log
+[36m(TestActor(test_actor) pid=14003)[0m test_actor
+create RM: 0.773747444152832, create cluster: 6.726991415023804, print 0.09264564514160156
+[36m(pid=14157)[0m add logger: log_rank_test_cluster-2_2_4[32m [repeated 3x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+[36m(pid=14157)[0m Created or verified log directory: ./output/logs[32m [repeated 3x across cluster][0m
+[36m(pid=14157)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-2_2_4.log[32m [repeated 3x across cluster][0m
+[36m(TestActor(test_actor) pid=14157)[0m test_actor[32m [repeated 3x across cluster][0m
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:40:58] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 14617] wrap TestActor to ray.remote()
+[36m(pid=14876)[0m add logger: log_rank_test_cluster-0_0_8
+[36m(pid=14876)[0m Created or verified log directory: ./output/logs
+[36m(pid=14876)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_8.log
+[36m(TestActor(test_actor) pid=14876)[0m test_actor
+[36m(pid=15031)[0m add logger: log_rank_test_cluster-2_2_8[32m [repeated 7x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+[36m(pid=15031)[0m Created or verified log directory: ./output/logs[32m [repeated 7x across cluster][0m
+[36m(pid=15031)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-2_2_8.log[32m [repeated 7x across cluster][0m
+create RM: 0.745621919631958, create cluster: 7.925987482070923, print 0.13425874710083008
+[36m(TestActor(test_actor) pid=15031)[0m test_actor[32m [repeated 7x across cluster][0m
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:41:10] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 16103] wrap TestActor to ray.remote()
+[36m(pid=16362)[0m add logger: log_rank_test_cluster-0_0_16
+[36m(pid=16362)[0m Created or verified log directory: ./output/logs
+[36m(pid=16362)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_16.log
+[36m(pid=16517)[0m add logger: log_rank_test_cluster-3_3_16
+[36m(pid=16517)[0m Created or verified log directory: ./output/logs
+[36m(pid=16517)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-3_3_16.log
+[36m(pid=16529)[0m add logger: log_rank_test_cluster-15_15_16
+[36m(pid=16529)[0m Created or verified log directory: ./output/logs
+[36m(pid=16529)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-15_15_16.log
+[36m(TestActor(test_actor) pid=16362)[0m test_actor
+create RM: 0.7246131896972656, create cluster: 9.655657768249512, print 0.15843582153320312
+[36m(pid=16519)[0m add logger: log_rank_test_cluster-5_5_16[32m [repeated 13x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+[36m(pid=16519)[0m Created or verified log directory: ./output/logs[32m [repeated 13x across cluster][0m
+[36m(pid=16519)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-5_5_16.log[32m [repeated 13x across cluster][0m
+[36m(TestActor(test_actor) pid=16527)[0m test_actor[32m [repeated 15x across cluster][0m
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:41:24] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 18812] wrap TestActor to ray.remote()
+[36m(pid=19071)[0m add logger: log_rank_test_cluster-0_0_32
+[36m(pid=19071)[0m Created or verified log directory: ./output/logs
+[36m(pid=19071)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_32.log
+[36m(pid=19226)[0m add logger: log_rank_test_cluster-3_3_32
+[36m(pid=19226)[0m Created or verified log directory: ./output/logs
+[36m(pid=19226)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-3_3_32.log
+[36m(pid=19249)[0m add logger: log_rank_test_cluster-26_26_32
+[36m(pid=19249)[0m Created or verified log directory: ./output/logs
+[36m(pid=19249)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-26_26_32.log
+[36m(TestActor(test_actor) pid=19224)[0m test_actor
+create RM: 0.7332448959350586, create cluster: 13.918420553207397, print 0.1735379695892334
+[36m(pid=19253)[0m add logger: log_rank_test_cluster-30_30_32[32m [repeated 29x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+[36m(pid=19253)[0m Created or verified log directory: ./output/logs[32m [repeated 29x across cluster][0m
+[36m(pid=19253)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-30_30_32.log[32m [repeated 29x across cluster][0m
+[36m(TestActor(test_actor) pid=19227)[0m test_actor[32m [repeated 31x across cluster][0m
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:41:42] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 24467] wrap TestActor to ray.remote()
+[36m(pid=24727)[0m add logger: log_rank_test_cluster-0_0_64
+[36m(pid=24727)[0m Created or verified log directory: ./output/logs
+[36m(pid=24727)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_64.log
+[36m(pid=24885)[0m add logger: log_rank_test_cluster-6_6_64
+[36m(pid=24885)[0m Created or verified log directory: ./output/logs
+[36m(pid=24885)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-6_6_64.log
+[36m(pid=24883)[0m add logger: log_rank_test_cluster-4_4_64
+[36m(pid=24883)[0m Created or verified log directory: ./output/logs
+[36m(pid=24883)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-4_4_64.log
+[36m(TestActor(test_actor) pid=24727)[0m test_actor
+create RM: 0.710975170135498, create cluster: 22.341171503067017, print 0.24340176582336426
+[36m(pid=24933)[0m add logger: log_rank_test_cluster-54_54_64[32m [repeated 61x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+[36m(pid=24933)[0m Created or verified log directory: ./output/logs[32m [repeated 61x across cluster][0m
+[36m(pid=24933)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-54_54_64.log[32m [repeated 61x across cluster][0m
+[36m(TestActor(test_actor) pid=24925)[0m test_actor[32m [repeated 63x across cluster][0m
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:42:09] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 34521] wrap TestActor to ray.remote()
+[36m(pid=34780)[0m add logger: log_rank_test_cluster-0_0_128
+[36m(pid=34780)[0m Created or verified log directory: ./output/logs
+[36m(pid=34780)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_128.log
+[36m(pid=34942)[0m add logger: log_rank_test_cluster-10_10_128
+[36m(pid=34942)[0m Created or verified log directory: ./output/logs
+[36m(pid=34942)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-10_10_128.log
+[36m(pid=34936)[0m add logger: log_rank_test_cluster-4_4_128
+[36m(pid=34936)[0m Created or verified log directory: ./output/logs
+[36m(pid=34936)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-4_4_128.log
+[36m(TestActor(test_actor) pid=35186)[0m test_actor
+create RM: 0.7156164646148682, create cluster: 40.955023765563965, print 0.3140895366668701
+[36m(pid=35516)[0m add logger: log_rank_test_cluster-104_104_128[32m [repeated 125x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+[36m(pid=35516)[0m Created or verified log directory: ./output/logs[32m [repeated 125x across cluster][0m
+[36m(pid=35516)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-104_104_128.log[32m [repeated 125x across cluster][0m
+[36m(TestActor(test_actor) pid=35101)[0m test_actor[32m [repeated 127x across cluster][0m
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:42:55] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 54498] wrap TestActor to ray.remote()
+[36m(pid=54757)[0m add logger: log_rank_test_cluster-0_0_256
+[36m(pid=54757)[0m Created or verified log directory: ./output/logs
+[36m(pid=54757)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_256.log
+[36m(pid=54926)[0m add logger: log_rank_test_cluster-17_17_256
+[36m(pid=54926)[0m Created or verified log directory: ./output/logs
+[36m(pid=54926)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-17_17_256.log
+[36m(pid=54911)[0m add logger: log_rank_test_cluster-2_2_256
+[36m(pid=54911)[0m Created or verified log directory: ./output/logs
+[36m(pid=54911)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-2_2_256.log
+[36m(pid=56314)[0m add logger: log_rank_test_cluster-171_171_256[32m [repeated 135x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+[36m(pid=56314)[0m Created or verified log directory: ./output/logs[32m [repeated 135x across cluster][0m
+[36m(pid=56314)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-171_171_256.log[32m [repeated 135x across cluster][0m
+[36m(pid=63569)[0m add logger: log_rank_test_cluster-187_187_256[32m [repeated 48x across cluster][0m
+[36m(pid=63569)[0m Created or verified log directory: ./output/logs[32m [repeated 48x across cluster][0m
+[36m(pid=63569)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-187_187_256.log[32m [repeated 48x across cluster][0m
+[36m(TestActor(test_actor) pid=67084)[0m test_actor
+create RM: 0.8133070468902588, create cluster: 68.77972674369812, print 0.4912538528442383
+[36m(pid=67882)[0m add logger: log_rank_test_cluster-236_236_256[32m [repeated 70x across cluster][0m
+[36m(pid=67882)[0m Created or verified log directory: ./output/logs[32m [repeated 70x across cluster][0m
+[36m(pid=67882)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-236_236_256.log[32m [repeated 70x across cluster][0m
+[36m(TestActor(test_actor) pid=55674)[0m test_actor[32m [repeated 255x across cluster][0m

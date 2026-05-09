@@ -1,0 +1,2 @@
+# JobID, gen_offset, train_offset (+offset is to convert local GPU ID from the global GPU ID known by the scheduler)
+job1 0 0

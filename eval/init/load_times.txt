@@ -1,0 +1,4 @@
+3B: Total load time for 8 processes: 7.98 s
+7B: Total load time for 8 processes: 11.27 s
+14B: Total load time for 8 processes: 14.62 s
+32B: Total load time for 8 processes: 33.55 s

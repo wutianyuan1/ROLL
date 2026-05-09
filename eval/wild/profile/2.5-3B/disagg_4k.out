@@ -1,0 +1,76 @@
+2025/11/03 08:33:41 | root | [Scheduler] connected to redis.
+2025/11/03 08:33:41 | root | **** Unexpected type: subscribe
+2025/11/03 08:34:19 | root | [Router] event: Event(job=job1, type=created), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:34:19 | root | [Scheduler] will execute [Event(job=job1, type=status, value=initializing)]
+2025/11/03 08:37:41 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H20,0,1,2,3,4,5,6,7), available_devices_before: (gen)[] (train)[],
+2025/11/03 08:37:41 | root | [Router] event: Event(job=job1, phase=init, type=release_gpu, value=NVIDIA H800,0,1,2,3,4,5,6,7), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[],
+2025/11/03 08:37:41 | root | [Router] event: Event(job=job1, phase=init, type=done), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:37:41 | root | [ResourceManager] Alloc worker-0: [0]
+2025/11/03 08:37:41 | root | [ResourceManager] Alloc worker-1: [1]
+2025/11/03 08:37:41 | root | [ResourceManager] Alloc worker-2: [2]
+2025/11/03 08:37:41 | root | [ResourceManager] Alloc worker-3: [3]
+2025/11/03 08:37:41 | root | [ResourceManager] Alloc worker-4: [4]
+2025/11/03 08:37:41 | root | [ResourceManager] Alloc worker-5: [5]
+2025/11/03 08:37:41 | root | [ResourceManager] Alloc worker-6: [6]
+2025/11/03 08:37:41 | root | [ResourceManager] Alloc worker-7: [7]
+2025/11/03 08:37:41 | root | [Scheduler] will execute [Event(job=job1, phase=generate, type=status, value=running), Event(job=job1, phase=generate, worker=0, type=status, value=running), Event(job=job1, phase=generate, worker=1, type=status, value=running), Event(job=job1, phase=generate, worker=2, type=status, value=running), Event(job=job1, phase=generate, worker=3, type=status, value=running), Event(job=job1, phase=generate, worker=4, type=status, value=running), Event(job=job1, phase=generate, worker=5, type=status, value=running), Event(job=job1, phase=generate, worker=6, type=status, value=running), Event(job=job1, phase=generate, worker=7, type=status, value=running)]
+2025/11/03 08:39:09 | root | [Router] event: Event(job=job1, phase=generate, worker=2, type=release_gpu, value=NVIDIA H20,2), available_devices_before: (gen)[] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:39:09 | root | [Router] event: Event(job=job1, phase=generate, worker=6, type=release_gpu, value=NVIDIA H20,6), available_devices_before: (gen)[2] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:39:09 | root | [Router] event: Event(job=job1, phase=generate, worker=5, type=release_gpu, value=NVIDIA H20,5), available_devices_before: (gen)[2, 6] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:39:09 | root | [Router] event: Event(job=job1, phase=generate, worker=4, type=release_gpu, value=NVIDIA H20,4), available_devices_before: (gen)[2, 5, 6] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:39:09 | root | [Router] event: Event(job=job1, phase=generate, worker=7, type=release_gpu, value=NVIDIA H20,7), available_devices_before: (gen)[2, 4, 5, 6] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:39:09 | root | [Router] event: Event(job=job1, phase=generate, worker=3, type=release_gpu, value=NVIDIA H20,3), available_devices_before: (gen)[2, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:39:09 | root | [Router] event: Event(job=job1, phase=generate, worker=0, type=release_gpu, value=NVIDIA H20,0), available_devices_before: (gen)[2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:39:09 | root | [Router] event: Event(job=job1, phase=generate, worker=1, type=release_gpu, value=NVIDIA H20,1), available_devices_before: (gen)[0, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:39:10 | root | [Router] event: Event(job=job1, phase=generate, type=done, value=0), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:39:10 | root | [Scheduler] will execute [Event(job=job1, phase=train, type=status, value=running)]
+2025/11/03 08:40:04 | root | [Router] event: Event(job=job1, phase=train, type=done, value=0), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[],
+2025/11/03 08:40:04 | root | [ResourceManager] Alloc worker-0: [0]
+2025/11/03 08:40:04 | root | [ResourceManager] Alloc worker-1: [1]
+2025/11/03 08:40:04 | root | [ResourceManager] Alloc worker-2: [2]
+2025/11/03 08:40:04 | root | [ResourceManager] Alloc worker-3: [3]
+2025/11/03 08:40:04 | root | [ResourceManager] Alloc worker-4: [4]
+2025/11/03 08:40:04 | root | [ResourceManager] Alloc worker-5: [5]
+2025/11/03 08:40:04 | root | [ResourceManager] Alloc worker-6: [6]
+2025/11/03 08:40:04 | root | [ResourceManager] Alloc worker-7: [7]
+2025/11/03 08:40:04 | root | [Scheduler] will execute [Event(job=job1, phase=generate, type=status, value=running), Event(job=job1, phase=generate, worker=0, type=status, value=running), Event(job=job1, phase=generate, worker=1, type=status, value=running), Event(job=job1, phase=generate, worker=2, type=status, value=running), Event(job=job1, phase=generate, worker=3, type=status, value=running), Event(job=job1, phase=generate, worker=4, type=status, value=running), Event(job=job1, phase=generate, worker=5, type=status, value=running), Event(job=job1, phase=generate, worker=6, type=status, value=running), Event(job=job1, phase=generate, worker=7, type=status, value=running)]
+2025/11/03 08:41:19 | root | [Router] event: Event(job=job1, phase=generate, worker=2, type=release_gpu, value=NVIDIA H20,2), available_devices_before: (gen)[] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:41:19 | root | [Router] event: Event(job=job1, phase=generate, worker=6, type=release_gpu, value=NVIDIA H20,6), available_devices_before: (gen)[2] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:41:19 | root | [Router] event: Event(job=job1, phase=generate, worker=5, type=release_gpu, value=NVIDIA H20,5), available_devices_before: (gen)[2, 6] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:41:19 | root | [Router] event: Event(job=job1, phase=generate, worker=0, type=release_gpu, value=NVIDIA H20,0), available_devices_before: (gen)[2, 5, 6] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:41:19 | root | [Router] event: Event(job=job1, phase=generate, worker=3, type=release_gpu, value=NVIDIA H20,3), available_devices_before: (gen)[0, 2, 5, 6] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:41:19 | root | [Router] event: Event(job=job1, phase=generate, worker=1, type=release_gpu, value=NVIDIA H20,1), available_devices_before: (gen)[0, 2, 3, 5, 6] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:41:19 | root | [Router] event: Event(job=job1, phase=generate, worker=7, type=release_gpu, value=NVIDIA H20,7), available_devices_before: (gen)[0, 1, 2, 3, 5, 6] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:41:19 | root | [Router] event: Event(job=job1, phase=generate, worker=4, type=release_gpu, value=NVIDIA H20,4), available_devices_before: (gen)[0, 1, 2, 3, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:41:19 | root | [Router] event: Event(job=job1, phase=generate, type=done, value=1), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:41:19 | root | [Scheduler] will execute [Event(job=job1, phase=train, type=status, value=running)]
+2025/11/03 08:42:01 | root | [Router] event: Event(job=job1, phase=train, type=done, value=1), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[],
+2025/11/03 08:42:01 | root | [ResourceManager] Alloc worker-0: [0]
+2025/11/03 08:42:01 | root | [ResourceManager] Alloc worker-1: [1]
+2025/11/03 08:42:01 | root | [ResourceManager] Alloc worker-2: [2]
+2025/11/03 08:42:01 | root | [ResourceManager] Alloc worker-3: [3]
+2025/11/03 08:42:01 | root | [ResourceManager] Alloc worker-4: [4]
+2025/11/03 08:42:01 | root | [ResourceManager] Alloc worker-5: [5]
+2025/11/03 08:42:01 | root | [ResourceManager] Alloc worker-6: [6]
+2025/11/03 08:42:01 | root | [ResourceManager] Alloc worker-7: [7]
+2025/11/03 08:42:01 | root | [Scheduler] will execute [Event(job=job1, phase=generate, type=status, value=running), Event(job=job1, phase=generate, worker=0, type=status, value=running), Event(job=job1, phase=generate, worker=1, type=status, value=running), Event(job=job1, phase=generate, worker=2, type=status, value=running), Event(job=job1, phase=generate, worker=3, type=status, value=running), Event(job=job1, phase=generate, worker=4, type=status, value=running), Event(job=job1, phase=generate, worker=5, type=status, value=running), Event(job=job1, phase=generate, worker=6, type=status, value=running), Event(job=job1, phase=generate, worker=7, type=status, value=running)]
+2025/11/03 08:43:14 | root | [Router] event: Event(job=job1, phase=generate, worker=2, type=release_gpu, value=NVIDIA H20,2), available_devices_before: (gen)[] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:43:15 | root | [Router] event: Event(job=job1, phase=generate, worker=5, type=release_gpu, value=NVIDIA H20,5), available_devices_before: (gen)[2] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:43:15 | root | [Router] event: Event(job=job1, phase=generate, worker=6, type=release_gpu, value=NVIDIA H20,6), available_devices_before: (gen)[2, 5] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:43:15 | root | [Router] event: Event(job=job1, phase=generate, worker=0, type=release_gpu, value=NVIDIA H20,0), available_devices_before: (gen)[2, 5, 6] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:43:15 | root | [Router] event: Event(job=job1, phase=generate, worker=3, type=release_gpu, value=NVIDIA H20,3), available_devices_before: (gen)[0, 2, 5, 6] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:43:15 | root | [Router] event: Event(job=job1, phase=generate, worker=7, type=release_gpu, value=NVIDIA H20,7), available_devices_before: (gen)[0, 2, 3, 5, 6] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:43:15 | root | [Router] event: Event(job=job1, phase=generate, worker=4, type=release_gpu, value=NVIDIA H20,4), available_devices_before: (gen)[0, 2, 3, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:43:15 | root | [Router] event: Event(job=job1, phase=generate, worker=1, type=release_gpu, value=NVIDIA H20,1), available_devices_before: (gen)[0, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:43:15 | root | [Router] event: Event(job=job1, phase=generate, type=done, value=2), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[0, 1, 2, 3, 4, 5, 6, 7],
+2025/11/03 08:43:16 | root | [Scheduler] will execute [Event(job=job1, phase=train, type=status, value=running)]
+2025/11/03 08:44:01 | root | [Router] event: Event(job=job1, phase=train, type=done, value=2), available_devices_before: (gen)[0, 1, 2, 3, 4, 5, 6, 7] (train)[],
+2025/11/03 08:44:01 | root | [ResourceManager] Alloc worker-0: [0]
+2025/11/03 08:44:01 | root | [ResourceManager] Alloc worker-1: [1]
+2025/11/03 08:44:01 | root | [ResourceManager] Alloc worker-2: [2]
+2025/11/03 08:44:01 | root | [ResourceManager] Alloc worker-3: [3]
+2025/11/03 08:44:01 | root | [ResourceManager] Alloc worker-4: [4]
+2025/11/03 08:44:01 | root | [ResourceManager] Alloc worker-5: [5]
+2025/11/03 08:44:01 | root | [ResourceManager] Alloc worker-6: [6]
+2025/11/03 08:44:01 | root | [ResourceManager] Alloc worker-7: [7]
+2025/11/03 08:44:01 | root | [Scheduler] will execute [Event(job=job1, phase=generate, type=status, value=running), Event(job=job1, phase=generate, worker=0, type=status, value=running), Event(job=job1, phase=generate, worker=1, type=status, value=running), Event(job=job1, phase=generate, worker=2, type=status, value=running), Event(job=job1, phase=generate, worker=3, type=status, value=running), Event(job=job1, phase=generate, worker=4, type=status, value=running), Event(job=job1, phase=generate, worker=5, type=status, value=running), Event(job=job1, phase=generate, worker=6, type=status, value=running), Event(job=job1, phase=generate, worker=7, type=status, value=running)]

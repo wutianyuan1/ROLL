@@ -1,0 +1,40 @@
+
+hydra:
+  run:
+    dir: .
+  output_subdir: null
+
+exp_name: "generate_baseline"
+seed: 42
+logging_dir: ./output/logs
+output_dir: ./output
+
+track_with: stdout
+
+rollout_batch_size: 16
+prompt_length: 128
+response_length: 512
+
+
+pretrain: Qwen/Qwen2.5-7B-Instruct
+
+reference:
+  model_args:
+    flash_attn: fa2
+    disable_gradient_checkpointing: true
+    dtype: bf16
+  generating_args:
+    max_new_tokens: ${response_length}
+    top_p: 0.99
+    top_k: 100
+    num_beams: 1
+    temperature: 0.99
+    num_return_sequences: 1
+  data_args:
+    template: qwen2_5
+  strategy_args:
+    strategy_name: hf_infer
+    strategy_config: ~
+  device_mapping: list(range(0,8))
+  num_gpus_per_worker: 2
+  infer_batch_size: 2

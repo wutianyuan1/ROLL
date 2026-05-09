@@ -1,0 +1,180 @@
+Initialized process rank 6 of 32 on device cuda:6.
+Initialized process rank 0 of 32 on device cuda:0.
+[Rank 6] Role: SENDER. Peer: Rank 22
+Initialized process rank 4 of 32 on device cuda:4.
+Initialized process rank 2 of 32 on device cuda:2.
+[Rank 2] Role: SENDER. Peer: Rank 18
+Initialized process rank 1 of 32 on device cuda:1.
+[Rank 4] Role: SENDER. Peer: Rank 20
+[Rank 1] Role: SENDER. Peer: Rank 17
+Initialized process rank 3 of 32 on device cuda:3.
+
+==================================================
+Model Size: 32.00 Billion Parameters
+Total Size: 61035.16 MB
+==================================================
+
+[Rank 0] Role: SENDER. Peer: Rank 16
+[Rank 3] Role: SENDER. Peer: Rank 19
+Initialized process rank 7 of 32 on device cuda:7.
+Initialized process rank 5 of 32 on device cuda:5.
+[Rank 5] Role: SENDER. Peer: Rank 21
+[Rank 7] Role: SENDER. Peer: Rank 23
+rank=0 send tensor key='param_0' shape:torch.Size([2000000000])
+rank=1 send tensor key='param_0' shape:torch.Size([2000000000])
+rank=2 send tensor key='param_0' shape:torch.Size([2000000000])
+rank=3 send tensor key='param_0' shape:torch.Size([2000000000])
+rank=5 send tensor key='param_0' shape:torch.Size([2000000000])
+rank=4 send tensor key='param_0' shape:torch.Size([2000000000])
+rank=6 send tensor key='param_0' shape:torch.Size([2000000000])
+rank=7 send tensor key='param_0' shape:torch.Size([2000000000])
+rank=1 send tensor key='param_1' shape:torch.Size([2000000000])
+rank=1 send tensor key='param_2' shape:torch.Size([2000000000])
+rank=1 send tensor key='param_3' shape:torch.Size([2000000000])
+rank=1 send tensor key='param_4' shape:torch.Size([2000000000])
+rank=1 send tensor key='param_5' shape:torch.Size([2000000000])
+rank=1 send tensor key='param_6' shape:torch.Size([2000000000])
+rank=1 send tensor key='param_7' shape:torch.Size([2000000000])
+rank=1 send tensor key='param_8' shape:torch.Size([2000000000])
+rank=1 send tensor key='param_9' shape:torch.Size([2000000000])
+rank=1 send tensor key='param_10' shape:torch.Size([2000000000])
+rank=1 send tensor key='param_11' shape:torch.Size([2000000000])
+rank=7 send tensor key='param_1' shape:torch.Size([2000000000])rank=1 send tensor key='param_12' shape:torch.Size([2000000000])
+
+rank=1 send tensor key='param_13' shape:torch.Size([2000000000])
+rank=1 send tensor key='param_14' shape:torch.Size([2000000000])
+rank=1 send tensor key='param_15' shape:torch.Size([2000000000])
+rank=7 send tensor key='param_2' shape:torch.Size([2000000000])
+rank=7 send tensor key='param_3' shape:torch.Size([2000000000])
+rank=7 send tensor key='param_4' shape:torch.Size([2000000000])
+rank=7 send tensor key='param_5' shape:torch.Size([2000000000])
+rank=7 send tensor key='param_6' shape:torch.Size([2000000000])
+rank=7 send tensor key='param_7' shape:torch.Size([2000000000])
+rank=7 send tensor key='param_8' shape:torch.Size([2000000000])
+rank=7 send tensor key='param_9' shape:torch.Size([2000000000])
+rank=7 send tensor key='param_10' shape:torch.Size([2000000000])
+rank=7 send tensor key='param_11' shape:torch.Size([2000000000])
+rank=7 send tensor key='param_12' shape:torch.Size([2000000000])
+rank=7 send tensor key='param_13' shape:torch.Size([2000000000])
+rank=7 send tensor key='param_14' shape:torch.Size([2000000000])
+rank=7 send tensor key='param_15' shape:torch.Size([2000000000])
+rank=4 send tensor key='param_1' shape:torch.Size([2000000000])
+rank=2 send tensor key='param_1' shape:torch.Size([2000000000])
+rank=5 send tensor key='param_1' shape:torch.Size([2000000000])
+rank=4 send tensor key='param_2' shape:torch.Size([2000000000])
+rank=4 send tensor key='param_3' shape:torch.Size([2000000000])
+rank=2 send tensor key='param_2' shape:torch.Size([2000000000])
+rank=5 send tensor key='param_2' shape:torch.Size([2000000000])
+rank=4 send tensor key='param_4' shape:torch.Size([2000000000])
+rank=2 send tensor key='param_3' shape:torch.Size([2000000000])
+rank=4 send tensor key='param_5' shape:torch.Size([2000000000])
+rank=5 send tensor key='param_3' shape:torch.Size([2000000000])
+rank=2 send tensor key='param_4' shape:torch.Size([2000000000])
+rank=4 send tensor key='param_6' shape:torch.Size([2000000000])rank=5 send tensor key='param_4' shape:torch.Size([2000000000])rank=2 send tensor key='param_5' shape:torch.Size([2000000000])
+
+
+rank=3 send tensor key='param_1' shape:torch.Size([2000000000])rank=4 send tensor key='param_7' shape:torch.Size([2000000000])rank=5 send tensor key='param_5' shape:torch.Size([2000000000])
+rank=2 send tensor key='param_6' shape:torch.Size([2000000000])
+
+
+rank=4 send tensor key='param_8' shape:torch.Size([2000000000])
+rank=5 send tensor key='param_6' shape:torch.Size([2000000000])
+rank=2 send tensor key='param_7' shape:torch.Size([2000000000])
+rank=4 send tensor key='param_9' shape:torch.Size([2000000000])
+rank=5 send tensor key='param_7' shape:torch.Size([2000000000])
+rank=2 send tensor key='param_8' shape:torch.Size([2000000000])
+rank=5 send tensor key='param_8' shape:torch.Size([2000000000])rank=4 send tensor key='param_10' shape:torch.Size([2000000000])
+
+rank=2 send tensor key='param_9' shape:torch.Size([2000000000])
+rank=5 send tensor key='param_9' shape:torch.Size([2000000000])
+rank=4 send tensor key='param_11' shape:torch.Size([2000000000])
+rank=2 send tensor key='param_10' shape:torch.Size([2000000000])
+rank=5 send tensor key='param_10' shape:torch.Size([2000000000])rank=4 send tensor key='param_12' shape:torch.Size([2000000000])
+
+rank=2 send tensor key='param_11' shape:torch.Size([2000000000])
+rank=4 send tensor key='param_13' shape:torch.Size([2000000000])rank=5 send tensor key='param_11' shape:torch.Size([2000000000])
+
+rank=2 send tensor key='param_12' shape:torch.Size([2000000000])
+rank=4 send tensor key='param_14' shape:torch.Size([2000000000])
+rank=5 send tensor key='param_12' shape:torch.Size([2000000000])
+rank=2 send tensor key='param_13' shape:torch.Size([2000000000])
+rank=3 send tensor key='param_2' shape:torch.Size([2000000000])
+rank=4 send tensor key='param_15' shape:torch.Size([2000000000])
+rank=5 send tensor key='param_13' shape:torch.Size([2000000000])
+rank=2 send tensor key='param_14' shape:torch.Size([2000000000])
+rank=3 send tensor key='param_3' shape:torch.Size([2000000000])rank=5 send tensor key='param_14' shape:torch.Size([2000000000])
+
+rank=2 send tensor key='param_15' shape:torch.Size([2000000000])
+rank=5 send tensor key='param_15' shape:torch.Size([2000000000])
+rank=3 send tensor key='param_4' shape:torch.Size([2000000000])
+rank=3 send tensor key='param_5' shape:torch.Size([2000000000])
+rank=3 send tensor key='param_6' shape:torch.Size([2000000000])
+rank=3 send tensor key='param_7' shape:torch.Size([2000000000])
+rank=3 send tensor key='param_8' shape:torch.Size([2000000000])
+rank=3 send tensor key='param_9' shape:torch.Size([2000000000])
+rank=3 send tensor key='param_10' shape:torch.Size([2000000000])
+rank=3 send tensor key='param_11' shape:torch.Size([2000000000])
+rank=3 send tensor key='param_12' shape:torch.Size([2000000000])
+rank=3 send tensor key='param_13' shape:torch.Size([2000000000])
+rank=3 send tensor key='param_14' shape:torch.Size([2000000000])
+rank=3 send tensor key='param_15' shape:torch.Size([2000000000])
+rank=6 send tensor key='param_1' shape:torch.Size([2000000000])
+rank=6 send tensor key='param_2' shape:torch.Size([2000000000])
+rank=6 send tensor key='param_3' shape:torch.Size([2000000000])
+rank=6 send tensor key='param_4' shape:torch.Size([2000000000])
+rank=6 send tensor key='param_5' shape:torch.Size([2000000000])
+rank=6 send tensor key='param_6' shape:torch.Size([2000000000])
+rank=6 send tensor key='param_7' shape:torch.Size([2000000000])
+rank=6 send tensor key='param_8' shape:torch.Size([2000000000])
+rank=6 send tensor key='param_9' shape:torch.Size([2000000000])
+rank=6 send tensor key='param_10' shape:torch.Size([2000000000])
+rank=6 send tensor key='param_11' shape:torch.Size([2000000000])
+rank=6 send tensor key='param_12' shape:torch.Size([2000000000])
+rank=6 send tensor key='param_13' shape:torch.Size([2000000000])
+rank=6 send tensor key='param_14' shape:torch.Size([2000000000])
+rank=6 send tensor key='param_15' shape:torch.Size([2000000000])
+rank=0 send tensor key='param_1' shape:torch.Size([2000000000])
+rank=0 send tensor key='param_2' shape:torch.Size([2000000000])
+rank=0 send tensor key='param_3' shape:torch.Size([2000000000])
+rank=0 send tensor key='param_4' shape:torch.Size([2000000000])
+rank=0 send tensor key='param_5' shape:torch.Size([2000000000])
+rank=0 send tensor key='param_6' shape:torch.Size([2000000000])
+rank=0 send tensor key='param_7' shape:torch.Size([2000000000])
+rank=0 send tensor key='param_8' shape:torch.Size([2000000000])
+rank=0 send tensor key='param_9' shape:torch.Size([2000000000])
+rank=0 send tensor key='param_10' shape:torch.Size([2000000000])
+rank=0 send tensor key='param_11' shape:torch.Size([2000000000])
+rank=0 send tensor key='param_12' shape:torch.Size([2000000000])
+rank=0 send tensor key='param_13' shape:torch.Size([2000000000])
+rank=0 send tensor key='param_14' shape:torch.Size([2000000000])
+rank=0 send tensor key='param_15' shape:torch.Size([2000000000])
+[Rank 5] -> [Rank 21] Transfer completed in 20.6985 seconds.
+[Rank 0] -> [Rank 16] Transfer completed in 21.4693 seconds.
+[Rank 7] -> [Rank 23] Transfer completed in 25.5069 seconds.
+[Rank 3] -> [Rank 19] Transfer completed in 26.0466 seconds.
+[Rank 6] -> [Rank 22] Transfer completed in 26.3061 seconds.
+[Rank 2] -> [Rank 18] Transfer completed in 26.7086 seconds.
+[Rank 1] -> [Rank 17] Transfer completed in 29.0268 seconds.
+[Rank 4] -> [Rank 20] Transfer completed in 29.0700 seconds.
+
+==================================================
+          TRANSFER SPEED RESULTS
+==================================================
+Model Size per Transfer: 61035.16 MB
+--------------------------------------------------
+Max Time (Slowest Transfer): 33.8323 s
+Min Time (Fastest Transfer): 20.6579 s
+Mean Time:                   25.5291 s
+Median Time:                 25.9875 s
+--------------------------------------------------
+Mean Throughput:             18.94 Gbps
+==================================================
+
+[0] Cleaned up and finished.
+[5] Cleaned up and finished.
+[7] Cleaned up and finished.
+[4] Cleaned up and finished.
+[3] Cleaned up and finished.
+[6] Cleaned up and finished.
+[1] Cleaned up and finished.
+[2] Cleaned up and finished.

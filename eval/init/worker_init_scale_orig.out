@@ -1,0 +1,321 @@
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[2025-10-20 13:25:48,170] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:25:50] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 127924] wrap TestActor to ray.remote()
+[36m(pid=128276)[0m add logger: log_rank_test_cluster-0_0_1
+[36m(pid=128276)[0m Created or verified log directory: ./output/logs
+[36m(pid=128276)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_1.log
+[36m(pid=128276)[0m [2025-10-20 13:25:54,415] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=128276)[0m [2025-10-20 13:25:54,416] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(TestActor(test_actor) pid=128276)[0m test_actor
+create RM: 0.679429292678833, create cluster: 4.998158931732178, print 0.09522652626037598
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[2025-10-20 13:26:00,574] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:26:02] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 128443] wrap TestActor to ray.remote()
+[36m(pid=128795)[0m add logger: log_rank_test_cluster-0_0_2
+[36m(pid=128795)[0m Created or verified log directory: ./output/logs
+[36m(pid=128795)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_2.log
+[36m(pid=128795)[0m [2025-10-20 13:26:06,710] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=128795)[0m [2025-10-20 13:26:06,711] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=128958)[0m add logger: log_rank_test_cluster-1_1_2
+[36m(pid=128958)[0m Created or verified log directory: ./output/logs
+[36m(pid=128958)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-1_1_2.log
+[36m(TestActor(test_actor) pid=128795)[0m test_actor
+[36m(pid=128958)[0m [2025-10-20 13:26:11,670] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=128958)[0m [2025-10-20 13:26:11,671] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+create RM: 0.6775670051574707, create cluster: 9.898028373718262, print 0.19040679931640625
+[36m(TestActor(test_actor) pid=128958)[0m test_actor
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[2025-10-20 13:26:17,705] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:26:19] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 129125] wrap TestActor to ray.remote()
+[36m(pid=129478)[0m add logger: log_rank_test_cluster-0_0_4
+[36m(pid=129478)[0m Created or verified log directory: ./output/logs
+[36m(pid=129478)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_4.log
+[36m(pid=129478)[0m [2025-10-20 13:26:24,417] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=129478)[0m [2025-10-20 13:26:24,418] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=129641)[0m add logger: log_rank_test_cluster-1_1_4
+[36m(pid=129641)[0m Created or verified log directory: ./output/logs
+[36m(pid=129641)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-1_1_4.log
+[36m(pid=129643)[0m add logger: log_rank_test_cluster-3_3_4
+[36m(pid=129643)[0m Created or verified log directory: ./output/logs
+[36m(pid=129643)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-3_3_4.log
+[36m(pid=129641)[0m [2025-10-20 13:26:30,537] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=129641)[0m [2025-10-20 13:26:30,538] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=129642)[0m [2025-10-20 13:26:30,536] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=129642)[0m [2025-10-20 13:26:30,537] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(TestActor(test_actor) pid=129478)[0m test_actor
+create RM: 0.7817432880401611, create cluster: 11.565577268600464, print 0.16414737701416016
+[36m(pid=129642)[0m add logger: log_rank_test_cluster-2_2_4
+[36m(pid=129642)[0m Created or verified log directory: ./output/logs
+[36m(pid=129642)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-2_2_4.log
+[36m(pid=129643)[0m [2025-10-20 13:26:30,604] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=129643)[0m [2025-10-20 13:26:30,605] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(TestActor(test_actor) pid=129642)[0m test_actor[32m [repeated 3x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[2025-10-20 13:26:36,706] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:26:38] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 130135] wrap TestActor to ray.remote()
+[36m(pid=130487)[0m add logger: log_rank_test_cluster-0_0_8
+[36m(pid=130487)[0m Created or verified log directory: ./output/logs
+[36m(pid=130487)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_8.log
+[36m(pid=130487)[0m [2025-10-20 13:26:42,827] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=130487)[0m [2025-10-20 13:26:42,828] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=130650)[0m add logger: log_rank_test_cluster-1_1_8
+[36m(pid=130650)[0m Created or verified log directory: ./output/logs
+[36m(pid=130650)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-1_1_8.log
+[36m(pid=130652)[0m add logger: log_rank_test_cluster-3_3_8
+[36m(pid=130652)[0m Created or verified log directory: ./output/logs
+[36m(pid=130650)[0m [2025-10-20 13:26:49,306] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=130650)[0m [2025-10-20 13:26:49,307] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=130652)[0m [2025-10-20 13:26:50,217] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=130652)[0m [2025-10-20 13:26:50,218] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(TestActor(test_actor) pid=130487)[0m test_actor
+create RM: 0.7099649906158447, create cluster: 12.780171155929565, print 0.2266545295715332
+[36m(pid=130655)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-6_6_8.log[32m [repeated 6x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+[36m(pid=130655)[0m add logger: log_rank_test_cluster-6_6_8[32m [repeated 5x across cluster][0m
+[36m(pid=130655)[0m Created or verified log directory: ./output/logs[32m [repeated 5x across cluster][0m
+[36m(pid=130655)[0m [2025-10-20 13:26:50,617] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 5x across cluster][0m
+[36m(pid=130655)[0m [2025-10-20 13:26:50,619] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 5x across cluster][0m
+[36m(TestActor(test_actor) pid=130655)[0m test_actor[32m [repeated 7x across cluster][0m
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[2025-10-20 13:26:56,936] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:26:58] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 131796] wrap TestActor to ray.remote()
+[36m(pid=132148)[0m add logger: log_rank_test_cluster-0_0_16
+[36m(pid=132148)[0m Created or verified log directory: ./output/logs
+[36m(pid=132148)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_16.log
+[36m(pid=132148)[0m [2025-10-20 13:27:03,315] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=132148)[0m [2025-10-20 13:27:03,316] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=132325)[0m add logger: log_rank_test_cluster-14_14_16
+[36m(pid=132325)[0m Created or verified log directory: ./output/logs
+[36m(pid=132325)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-14_14_16.log
+[36m(pid=132320)[0m add logger: log_rank_test_cluster-9_9_16
+[36m(pid=132320)[0m Created or verified log directory: ./output/logs
+[36m(pid=132320)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-9_9_16.log
+[36m(pid=132324)[0m [2025-10-20 13:27:14,333] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=132324)[0m [2025-10-20 13:27:14,334] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=132321)[0m add logger: log_rank_test_cluster-10_10_16[32m [repeated 13x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+[36m(pid=132321)[0m Created or verified log directory: ./output/logs[32m [repeated 13x across cluster][0m
+[36m(pid=132321)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-10_10_16.log[32m [repeated 13x across cluster][0m
+[36m(TestActor(test_actor) pid=132148)[0m test_actor
+create RM: 0.711472749710083, create cluster: 19.39108395576477, print 0.25971221923828125
+[36m(pid=132319)[0m [2025-10-20 13:27:17,362] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 14x across cluster][0m
+[36m(pid=132319)[0m [2025-10-20 13:27:17,363] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 14x across cluster][0m
+[36m(TestActor(test_actor) pid=132321)[0m test_actor[32m [repeated 15x across cluster][0m
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[2025-10-20 13:27:24,001] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:27:26] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 134762] wrap TestActor to ray.remote()
+[36m(pid=135114)[0m add logger: log_rank_test_cluster-0_0_32
+[36m(pid=135114)[0m Created or verified log directory: ./output/logs
+[36m(pid=135114)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_32.log
+[36m(pid=135114)[0m [2025-10-20 13:27:30,428] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=135114)[0m [2025-10-20 13:27:30,429] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=135298)[0m add logger: log_rank_test_cluster-22_22_32
+[36m(pid=135298)[0m Created or verified log directory: ./output/logs
+[36m(pid=135298)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-22_22_32.log
+[36m(pid=135293)[0m add logger: log_rank_test_cluster-17_17_32
+[36m(pid=135293)[0m Created or verified log directory: ./output/logs
+[36m(pid=135293)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-17_17_32.log
+[36m(pid=135298)[0m [2025-10-20 13:27:42,824] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=135298)[0m [2025-10-20 13:27:42,825] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=135286)[0m add logger: log_rank_test_cluster-10_10_32[32m [repeated 29x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+[36m(pid=135286)[0m Created or verified log directory: ./output/logs[32m [repeated 29x across cluster][0m
+[36m(pid=135286)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-10_10_32.log[32m [repeated 29x across cluster][0m
+[36m(pid=135302)[0m [2025-10-20 13:27:50,475] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 6x across cluster][0m
+[36m(pid=135302)[0m [2025-10-20 13:27:50,476] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 6x across cluster][0m
+[36m(TestActor(test_actor) pid=135114)[0m test_actor
+create RM: 0.7157471179962158, create cluster: 26.054900407791138, print 0.25906896591186523
+[36m(pid=135283)[0m [2025-10-20 13:27:51,169] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 24x across cluster][0m
+[36m(pid=135283)[0m [2025-10-20 13:27:51,170] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 24x across cluster][0m
+[36m(TestActor(test_actor) pid=135291)[0m test_actor[32m [repeated 31x across cluster][0m
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[2025-10-20 13:27:57,859] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:28:00] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 140336] wrap TestActor to ray.remote()
+[36m(pid=140688)[0m add logger: log_rank_test_cluster-0_0_64
+[36m(pid=140688)[0m Created or verified log directory: ./output/logs
+[36m(pid=140688)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_64.log
+[36m(pid=140688)[0m [2025-10-20 13:28:04,429] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=140688)[0m [2025-10-20 13:28:04,430] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=140866)[0m add logger: log_rank_test_cluster-16_16_64
+[36m(pid=140866)[0m Created or verified log directory: ./output/logs
+[36m(pid=140866)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-16_16_64.log
+[36m(pid=140853)[0m add logger: log_rank_test_cluster-3_3_64
+[36m(pid=140853)[0m Created or verified log directory: ./output/logs
+[36m(pid=140853)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-3_3_64.log
+[36m(pid=140852)[0m [2025-10-20 13:28:24,197] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=140852)[0m [2025-10-20 13:28:24,198] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=140886)[0m add logger: log_rank_test_cluster-36_36_64[32m [repeated 61x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+[36m(pid=140886)[0m Created or verified log directory: ./output/logs[32m [repeated 61x across cluster][0m
+[36m(pid=140886)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-36_36_64.log[32m [repeated 61x across cluster][0m
+[36m(pid=140855)[0m [2025-10-20 13:28:29,246] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 4x across cluster][0m
+[36m(pid=140855)[0m [2025-10-20 13:28:29,247] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 4x across cluster][0m
+[36m(pid=140890)[0m [2025-10-20 13:28:35,268] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 4x across cluster][0m
+[36m(pid=140890)[0m [2025-10-20 13:28:35,270] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 4x across cluster][0m
+[36m(pid=140887)[0m [2025-10-20 13:28:40,247] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 19x across cluster][0m
+[36m(pid=140887)[0m [2025-10-20 13:28:40,248] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 19x across cluster][0m
+[36m(TestActor(test_actor) pid=140863)[0m test_actor
+create RM: 0.7827329635620117, create cluster: 41.888347148895264, print 0.30872106552124023
+[36m(pid=140992)[0m [2025-10-20 13:28:40,784] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 35x across cluster][0m
+[36m(pid=140992)[0m [2025-10-20 13:28:40,786] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 35x across cluster][0m
+[36m(TestActor(test_actor) pid=140867)[0m test_actor[32m [repeated 63x across cluster][0m
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[2025-10-20 13:28:47,664] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:28:49] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 151126] wrap TestActor to ray.remote()
+[36m(pid=151478)[0m add logger: log_rank_test_cluster-0_0_128
+[36m(pid=151478)[0m Created or verified log directory: ./output/logs
+[36m(pid=151478)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_128.log
+[36m(pid=151478)[0m [2025-10-20 13:28:54,612] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=151478)[0m [2025-10-20 13:28:54,613] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=151650)[0m add logger: log_rank_test_cluster-10_10_128
+[36m(pid=151650)[0m Created or verified log directory: ./output/logs
+[36m(pid=151650)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-10_10_128.log
+[36m(pid=151656)[0m add logger: log_rank_test_cluster-16_16_128
+[36m(pid=151656)[0m Created or verified log directory: ./output/logs
+[36m(pid=151656)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-16_16_128.log
+[36m(pid=151656)[0m [2025-10-20 13:29:29,856] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=151656)[0m [2025-10-20 13:29:29,858] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=152465)[0m add logger: log_rank_test_cluster-115_115_128[32m [repeated 125x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+[36m(pid=152465)[0m Created or verified log directory: ./output/logs[32m [repeated 125x across cluster][0m
+[36m(pid=152465)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-115_115_128.log[32m [repeated 125x across cluster][0m
+[36m(pid=151642)[0m [2025-10-20 13:29:35,427] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 5x across cluster][0m
+[36m(pid=151642)[0m [2025-10-20 13:29:35,428] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 5x across cluster][0m
+[36m(pid=151641)[0m [2025-10-20 13:29:41,140] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 3x across cluster][0m
+[36m(pid=151641)[0m [2025-10-20 13:29:41,141] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 3x across cluster][0m
+[36m(pid=151667)[0m [2025-10-20 13:29:46,481] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 6x across cluster][0m
+[36m(pid=151667)[0m [2025-10-20 13:29:46,482] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 6x across cluster][0m
+[36m(pid=151647)[0m [2025-10-20 13:29:52,107] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 2x across cluster][0m
+[36m(pid=151647)[0m [2025-10-20 13:29:52,108] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 2x across cluster][0m
+[36m(pid=151815)[0m [2025-10-20 13:29:58,170] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 2x across cluster][0m
+[36m(pid=151815)[0m [2025-10-20 13:29:58,171] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 2x across cluster][0m
+[36m(pid=151674)[0m [2025-10-20 13:30:03,254] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 54x across cluster][0m
+[36m(pid=151674)[0m [2025-10-20 13:30:03,256] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 54x across cluster][0m
+[36m(TestActor(test_actor) pid=152134)[0m test_actor
+create RM: 0.6830658912658691, create cluster: 75.64391207695007, print 0.4075443744659424
+[36m(pid=152392)[0m [2025-10-20 13:30:04,214] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 54x across cluster][0m
+[36m(pid=152392)[0m [2025-10-20 13:30:04,217] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 54x across cluster][0m
+[36m(TestActor(test_actor) pid=151665)[0m test_actor[32m [repeated 127x across cluster][0m
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[2025-10-20 13:30:11,917] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:30:13] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 172352] wrap TestActor to ray.remote()
+[36m(pid=172704)[0m add logger: log_rank_test_cluster-0_0_256
+[36m(pid=172704)[0m Created or verified log directory: ./output/logs
+[36m(pid=172704)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_256.log
+[36m(pid=172704)[0m [2025-10-20 13:30:19,436] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=172704)[0m [2025-10-20 13:30:19,437] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=172874)[0m add logger: log_rank_test_cluster-7_7_256
+[36m(pid=172874)[0m Created or verified log directory: ./output/logs
+[36m(pid=172874)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-7_7_256.log
+[36m(pid=172872)[0m add logger: log_rank_test_cluster-5_5_256
+[36m(pid=172872)[0m Created or verified log directory: ./output/logs
+[36m(pid=172872)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-5_5_256.log
+[36m(pid=173172)[0m add logger: log_rank_test_cluster-76_76_256[32m [repeated 153x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+[36m(pid=173172)[0m Created or verified log directory: ./output/logs[32m [repeated 153x across cluster][0m
+[36m(pid=173172)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-76_76_256.log[32m [repeated 153x across cluster][0m
+[36m(pid=172874)[0m [2025-10-20 13:31:41,794] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=172874)[0m [2025-10-20 13:31:41,795] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=173965)[0m add logger: log_rank_test_cluster-147_147_256[32m [repeated 29x across cluster][0m
+[36m(pid=173965)[0m Created or verified log directory: ./output/logs[32m [repeated 29x across cluster][0m
+[36m(pid=173965)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-147_147_256.log[32m [repeated 29x across cluster][0m
+[36m(pid=172870)[0m [2025-10-20 13:31:45,621] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 12x across cluster][0m
+[36m(pid=172870)[0m [2025-10-20 13:31:45,622] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 12x across cluster][0m
+[36m(pid=181425)[0m add logger: log_rank_test_cluster-185_185_256
+[36m(pid=181425)[0m Created or verified log directory: ./output/logs
+[36m(pid=181425)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-185_185_256.log
+[36m(pid=181821)[0m add logger: log_rank_test_cluster-253_253_256
+[36m(pid=181821)[0m Created or verified log directory: ./output/logs
+[36m(pid=181821)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-253_253_256.log
+[36m(pid=172930)[0m [2025-10-20 13:31:57,245] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=172930)[0m [2025-10-20 13:31:57,246] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=183047)[0m add logger: log_rank_test_cluster-197_197_256[32m [repeated 24x across cluster][0m
+[36m(pid=183047)[0m Created or verified log directory: ./output/logs[32m [repeated 24x across cluster][0m
+[36m(pid=183047)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-197_197_256.log[32m [repeated 24x across cluster][0m
+[36m(pid=172882)[0m [2025-10-20 13:31:57,174] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=172882)[0m [2025-10-20 13:31:57,176] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=185898)[0m add logger: log_rank_test_cluster-223_223_256[32m [repeated 27x across cluster][0m
+[36m(pid=185898)[0m Created or verified log directory: ./output/logs[32m [repeated 27x across cluster][0m
+[36m(pid=185898)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-223_223_256.log[32m [repeated 27x across cluster][0m
+[36m(pid=172883)[0m [2025-10-20 13:32:03,620] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=172883)[0m [2025-10-20 13:32:03,622] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=185735)[0m add logger: log_rank_test_cluster-226_226_256[32m [repeated 15x across cluster][0m
+[36m(pid=185735)[0m Created or verified log directory: ./output/logs[32m [repeated 15x across cluster][0m
+[36m(pid=185735)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-226_226_256.log[32m [repeated 15x across cluster][0m
+[36m(pid=172869)[0m [2025-10-20 13:32:08,843] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 5x across cluster][0m
+[36m(pid=172869)[0m [2025-10-20 13:32:08,844] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 5x across cluster][0m
+[36m(pid=172963)[0m [2025-10-20 13:32:13,797] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 85x across cluster][0m
+[36m(pid=172963)[0m [2025-10-20 13:32:13,806] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 85x across cluster][0m
+[36m(pid=181425)[0m [2025-10-20 13:32:30,342] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 79x across cluster][0m
+[36m(pid=181425)[0m [2025-10-20 13:32:30,344] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 79x across cluster][0m
+[36m(pid=201020)[0m add logger: log_rank_test_cluster-235_235_256
+[36m(pid=201020)[0m Created or verified log directory: ./output/logs
+[36m(pid=201020)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-235_235_256.log
+[36m(pid=201019)[0m [2025-10-20 13:32:35,608] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 68x across cluster][0m
+[36m(pid=201019)[0m [2025-10-20 13:32:35,610] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 68x across cluster][0m
+[36m(TestActor(test_actor) pid=201020)[0m test_actor
+create RM: 0.696317195892334, create cluster: 142.6217746734619, print 0.7470014095306396
+[36m(pid=201018)[0m add logger: log_rank_test_cluster-243_243_256[32m [repeated 2x across cluster][0m
+[36m(pid=201018)[0m Created or verified log directory: ./output/logs[32m [repeated 2x across cluster][0m
+[36m(pid=201018)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-243_243_256.log[32m [repeated 2x across cluster][0m
+[36m(pid=201018)[0m [2025-10-20 13:32:35,649] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 2x across cluster][0m
+[36m(pid=201018)[0m [2025-10-20 13:32:35,650] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 2x across cluster][0m
+[36m(TestActor(test_actor) pid=174208)[0m test_actor[32m [repeated 255x across cluster][0m
+add logger: log_rank_DRIVER_0_1
+Created or verified log directory: ./output/logs
+Added logging to file: /root/workspace/roll-test/output/logs/log_rank_DRIVER_0_1.log
+[2025-10-20 13:32:44,212] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[DEBUG][Cluster]worker_cls(before): <class '__main__.TestActor'>
+[DEBUG][Cluster]worker_cls: <class '__main__.TestActor'>
+[2025-10-20 13:32:46] [cluster.py (46)] [INFO] [DRIVER 0 / 1][PID 214615] wrap TestActor to ray.remote()
+[36m(pid=214967)[0m add logger: log_rank_test_cluster-0_0_512
+[36m(pid=214967)[0m Created or verified log directory: ./output/logs
+[36m(pid=214967)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-0_0_512.log
+[36m(pid=214967)[0m [2025-10-20 13:32:50,522] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=214967)[0m [2025-10-20 13:32:50,523] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=215131)[0m add logger: log_rank_test_cluster-2_2_512
+[36m(pid=215131)[0m Created or verified log directory: ./output/logs
+[36m(pid=215131)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-2_2_512.log
+[36m(pid=215130)[0m add logger: log_rank_test_cluster-1_1_512
+[36m(pid=215130)[0m Created or verified log directory: ./output/logs
+[36m(pid=215130)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-1_1_512.log
+[36m(pid=215287)[0m add logger: log_rank_test_cluster-64_64_512[32m [repeated 41x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+[36m(pid=215287)[0m Created or verified log directory: ./output/logs[32m [repeated 41x across cluster][0m
+[36m(pid=215287)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-64_64_512.log[32m [repeated 41x across cluster][0m
+[36m(pid=215131)[0m [2025-10-20 13:35:11,647] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.
+[36m(pid=215131)[0m [2025-10-20 13:35:11,649] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)
+[36m(pid=215952)[0m add logger: log_rank_test_cluster-115_115_512[32m [repeated 141x across cluster][0m
+[36m(pid=215952)[0m Created or verified log directory: ./output/logs[32m [repeated 141x across cluster][0m
+[36m(pid=215952)[0m Added logging to file: /root/workspace/ROLL/output/logs/log_rank_test_cluster-115_115_512.log[32m [repeated 141x across cluster][0m
+[36m(pid=216050)[0m [2025-10-20 13:35:16,822] [WARNING] [real_accelerator.py:181:get_accelerator] Setting accelerator to CPU. If you have GPU or other accelerator, we were unable to detect it.[32m [repeated 11x across cluster][0m
+[36m(pid=216050)[0m [2025-10-20 13:35:16,823] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cpu (auto detect)[32m [repeated 11x across cluster][0m

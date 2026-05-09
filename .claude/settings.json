@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(brew list:*)",
+      "Bash(redis-cli -h 127.0.0.1 -p 19999 shutdown nosave)",
+      "Bash(ls -la /Users/wuty/Desktop/ROLL/roll/multi_tenant/emu_failure_demo_fixed/*.jsonl)",
+      "Bash(PYTHONPATH=/Users/wuty/Desktop/ROLL python roll/multi_tenant/emu_tenant.py)",
+      "Bash(wc -l /Users/wuty/Desktop/ROLL/roll/multi_tenant/emu_failure_demo/*.jsonl)",
+      "Bash(grep \"job_recovered\" /Users/wuty/Desktop/ROLL/roll/multi_tenant/emu_failure_demo/*.jsonl)",
+      "Bash(ls -la roll/multi_tenant/emu_failure_demo/*.stderr)",
+      "Read(//Users/wuty/Desktop/backup/weaveimages/**)",
+      "Read(//Users/wuty/Desktop/ROLL/{\n    match\\($0, /job=job\\([0-9]+\\)/, job\\);\n    match\\($0, /phase=\\([a-z]+\\)/, phase\\);\n    match\\($0, /value=\\([0-9]+\\)/**)",
+      "Bash(python -c \"import seaborn; print\\(''seaborn ok''\\)\")",
+      "Bash(PYTHONPATH=/Users/wuty/Desktop/ROLL python roll/multi_tenant/plot_timeline.py --output-dir roll/multi_tenant/emu_failure_demo)"
+    ],
+    "additionalDirectories": [
+      "/Users/wuty/Desktop/ROLL/roll/multi_tenant/emu_failure_demo"
+    ]
+  }
+}

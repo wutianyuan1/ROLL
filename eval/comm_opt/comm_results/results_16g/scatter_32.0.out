@@ -1,0 +1,106 @@
+Initialized process rank 0 of 16 on device cuda:0.
+Initialized process rank 3 of 16 on device cuda:3.
+Initialized process rank 2 of 16 on device cuda:2.
+Initialized process rank 5 of 16 on device cuda:5.
+Initialized process rank 6 of 16 on device cuda:6.
+Initialized process rank 1 of 16 on device cuda:1.
+Initialized process rank 4 of 16 on device cuda:4.
+Initialized process rank 7 of 16 on device cuda:7.
+
+============================================================
+Transfer Scheme: Sharded P2P Send, followed by Intra-Group All-Gather
+Model Size: 61035.16 MB
+============================================================
+
+[Rank 2] -> [Rank 10] Starting Stage 1: Sending shard 2 (32 tensors).
+[Rank 0] -> [Rank 8] Starting Stage 1: Sending shard 0 (32 tensors).[Rank 1] -> [Rank 9] Starting Stage 1: Sending shard 1 (32 tensors).
+
+[Rank 4] -> [Rank 12] Starting Stage 1: Sending shard 4 (32 tensors).
+[Rank 6] -> [Rank 14] Starting Stage 1: Sending shard 6 (32 tensors).
+[Rank 7] -> [Rank 15] Starting Stage 1: Sending shard 7 (32 tensors).
+[Rank 5] -> [Rank 13] Starting Stage 1: Sending shard 5 (32 tensors).
+[Rank 3] -> [Rank 11] Starting Stage 1: Sending shard 3 (32 tensors).
+[Rank 0] -> [Rank 8] Stage 1 finished in 4.4231s.
+[Rank 5] -> [Rank 13] Stage 1 finished in 4.5232s.
+[Rank 3] -> [Rank 11] Stage 1 finished in 4.6589s.
+[Rank 7] -> [Rank 15] Stage 1 finished in 4.7522s.
+[Rank 2] -> [Rank 10] Stage 1 finished in 4.8700s.
+[Rank 1] -> [Rank 9] Stage 1 finished in 4.9759s.
+[Rank 6] -> [Rank 14] Stage 1 finished in 5.0390s.
+[Rank 4] -> [Rank 12] Stage 1 finished in 5.3325s.
+
+============================================================
+      SCATTER-GATHER TRANSFER SPEED RESULTS
+============================================================
+Model Size:              61035.16 MB
+------------------------------------------------------------
+Stage 1 (Max Shard Send): 5.3325 s
+Stage 2 (Gather Time):    0.2583 s
+------------------------------------------------------------
+Total End-to-End Time:   16.6777 s
+============================================================
+
+[Rank 0] -> [Rank 8] Starting Stage 1: Sending shard 0 (32 tensors).
+[Rank 1] -> [Rank 9] Starting Stage 1: Sending shard 1 (32 tensors).
+[Rank 3] -> [Rank 11] Starting Stage 1: Sending shard 3 (32 tensors).
+[Rank 4] -> [Rank 12] Starting Stage 1: Sending shard 4 (32 tensors).
+[Rank 2] -> [Rank 10] Starting Stage 1: Sending shard 2 (32 tensors).
+[Rank 5] -> [Rank 13] Starting Stage 1: Sending shard 5 (32 tensors).
+[Rank 6] -> [Rank 14] Starting Stage 1: Sending shard 6 (32 tensors).
+[Rank 7] -> [Rank 15] Starting Stage 1: Sending shard 7 (32 tensors).
+[Rank 0] -> [Rank 8] Stage 1 finished in 2.5406s.
+[Rank 5] -> [Rank 13] Stage 1 finished in 2.7447s.
+[Rank 7] -> [Rank 15] Stage 1 finished in 2.9442s.
+[Rank 3] -> [Rank 11] Stage 1 finished in 2.9884s.
+[Rank 2] -> [Rank 10] Stage 1 finished in 3.0548s.
+[Rank 6] -> [Rank 14] Stage 1 finished in 3.2849s.
+[Rank 1] -> [Rank 9] Stage 1 finished in 3.4560s.
+[Rank 4] -> [Rank 12] Stage 1 finished in 3.5296s.
+
+============================================================
+      SCATTER-GATHER TRANSFER SPEED RESULTS
+============================================================
+Model Size:              61035.16 MB
+------------------------------------------------------------
+Stage 1 (Max Shard Send): 3.5296 s
+Stage 2 (Gather Time):    0.2587 s
+------------------------------------------------------------
+Total End-to-End Time:   3.7985 s
+============================================================
+
+[Rank 0] -> [Rank 8] Starting Stage 1: Sending shard 0 (32 tensors).
+[Rank 4] -> [Rank 12] Starting Stage 1: Sending shard 4 (32 tensors).[Rank 6] -> [Rank 14] Starting Stage 1: Sending shard 6 (32 tensors).[Rank 7] -> [Rank 15] Starting Stage 1: Sending shard 7 (32 tensors).[Rank 1] -> [Rank 9] Starting Stage 1: Sending shard 1 (32 tensors).
+[Rank 2] -> [Rank 10] Starting Stage 1: Sending shard 2 (32 tensors).[Rank 5] -> [Rank 13] Starting Stage 1: Sending shard 5 (32 tensors).[Rank 3] -> [Rank 11] Starting Stage 1: Sending shard 3 (32 tensors).
+
+
+
+
+
+[Rank 0] -> [Rank 8] Stage 1 finished in 2.5999s.
+[Rank 5] -> [Rank 13] Stage 1 finished in 2.7817s.
+[Rank 7] -> [Rank 15] Stage 1 finished in 3.0060s.
+[Rank 3] -> [Rank 11] Stage 1 finished in 3.0447s.
+[Rank 2] -> [Rank 10] Stage 1 finished in 3.1771s.
+[Rank 6] -> [Rank 14] Stage 1 finished in 3.4029s.
+[Rank 1] -> [Rank 9] Stage 1 finished in 3.5778s.
+[Rank 4] -> [Rank 12] Stage 1 finished in 3.5780s.
+
+============================================================
+      SCATTER-GATHER TRANSFER SPEED RESULTS
+============================================================
+Model Size:              61035.16 MB
+------------------------------------------------------------
+Stage 1 (Max Shard Send): 3.5780 s
+Stage 2 (Gather Time):    0.2586 s
+------------------------------------------------------------
+Total End-to-End Time:   3.8526 s
+============================================================
+
+[0] Cleaned up and finished.
+[1] Cleaned up and finished.
+[2] Cleaned up and finished.
+[3] Cleaned up and finished.
+[6] Cleaned up and finished.
+[5] Cleaned up and finished.
+[4] Cleaned up and finished.
+[7] Cleaned up and finished.

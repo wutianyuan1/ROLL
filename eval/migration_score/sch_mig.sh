@@ -1,0 +1,1 @@
+RATIO=0.875 COLO=1 NG=16 NT=16 GDA="NVIDIA H800" TDA="NVIDIA H800" MAPFN="examples/single_job_mapping.txt" N_JOB=1 python worker_scheduler/scheduler.py

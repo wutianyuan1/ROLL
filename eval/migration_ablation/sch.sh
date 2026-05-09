@@ -1,0 +1,1 @@
+NG=8 NT=16 GDA="NVIDIA H20" TDA="NVIDIA H800" MAPFN="examples/migration_ablation/mapping.txt" N_JOB=2 RATIO=0.875 python worker_scheduler/scheduler.py 

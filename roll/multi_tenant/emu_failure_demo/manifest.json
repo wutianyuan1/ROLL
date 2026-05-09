@@ -1,0 +1,11 @@
+{
+  "scheduler_log": "/Users/wuty/Desktop/ROLL/roll/multi_tenant/emu_failure_demo/scheduler.log",
+  "timeline": "/Users/wuty/Desktop/ROLL/roll/multi_tenant/emu_failure_demo/timeline.png",
+  "job_logs": {
+    "E": "/Users/wuty/Desktop/ROLL/roll/multi_tenant/emu_failure_demo/E.jsonl",
+    "D1": "/Users/wuty/Desktop/ROLL/roll/multi_tenant/emu_failure_demo/D1.jsonl",
+    "D2": "/Users/wuty/Desktop/ROLL/roll/multi_tenant/emu_failure_demo/D2.jsonl"
+  },
+  "fail_time": 1776285901.263571,
+  "recover_time": 1776285912.0848541
+}
